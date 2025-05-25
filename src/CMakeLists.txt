@@ -1,6 +1,8 @@
 file(GLOB_RECURSE SRC
      "*.cpp"
      "utils/*.cpp"
+     "rendering/*.cpp"
+     "vk/*.cpp"
 )
 
 add_executable (${PROJECT_NAME} ${SRC})
@@ -26,6 +28,7 @@ target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE
     SDL3-static
     glm
     spdlog::spdlog
+    vk-bootstrap::vk-bootstrap
 )
 
 target_include_directories(${CMAKE_PROJECT_NAME}

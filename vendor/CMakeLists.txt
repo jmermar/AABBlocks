@@ -21,4 +21,11 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(glm)
 
+FetchContent_Declare(
+  vkb
+  GIT_REPOSITORY https://github.com/charles-lunarg/vk-bootstrap.git
+  GIT_TAG v1.4.315
+)
+FetchContent_MakeAvailable(vkb)
+
 add_subdirectory(spdlog)

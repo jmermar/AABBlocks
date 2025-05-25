@@ -4,7 +4,7 @@ namespace vblck
 {
     namespace vk
     {
-        template <typename Raw, void (*Des)(VkDevice, Raw)>
+        template <typename Raw, void (*Des)(VkDevice, Raw, const VkAllocationCallbacks *)>
         class RAII
         {
         public:
@@ -13,7 +13,7 @@ namespace vblck
             {
             }
 
-            RAII(VkDevice &&device, Raw &&raw)
+            RAII(VkDevice device, Raw raw)
                 : raw(raw), device(device)
             {
             }
@@ -23,7 +23,7 @@ namespace vblck
                 Destroy();
             }
 
-            void set(VkDevice &&device, Raw &&raw)
+            void set(VkDevice device, Raw raw)
             {
                 Destroy();
                 this->device = device;
@@ -37,7 +37,6 @@ namespace vblck
             RAII &operator=(RAII &&other)
             {
                 Destroy();
-                assert(raw == nullptr);
                 raw = other.raw;
                 device = other.device;
                 other.raw = nullptr;
@@ -62,7 +61,7 @@ namespace vblck
             {
                 if (!raw)
                     return;
-                Des(raw);
+                Des(device, raw, nullptr);
                 raw = nullptr;
             }
 
@@ -71,7 +70,7 @@ namespace vblck
             VkDevice device;
         };
 
-#define MAKE_RAII(vulkanType, delFun) using RAII_##vulkanType = RAII<vulkanType, [](VkDevice d, vulkanType t) { delFun(d, t, nullptr); }>;
+#define MAKE_RAII(vulkanType, delFun) using RAII_##vulkanType = RAII<vulkanType, delFun>;
 
         MAKE_RAII(VkBuffer, vkDestroyBuffer);
         MAKE_RAII(VkImage, vkDestroyImage);
@@ -80,6 +79,7 @@ namespace vblck
         MAKE_RAII(VkImageView, vkDestroyImageView);
         MAKE_RAII(VkPipeline, vkDestroyPipeline);
         MAKE_RAII(VkPipelineLayout, vkDestroyPipelineLayout);
+        MAKE_RAII(VkSwapchainKHR, vkDestroySwapchainKHR)
 #undef MAKE_RAII
     }
 }
