@@ -80,6 +80,6 @@ namespace vblck
         MAKE_RAII(VkImageView, vkDestroyImageView);
         MAKE_RAII(VkPipeline, vkDestroyPipeline);
         MAKE_RAII(VkPipelineLayout, vkDestroyPipelineLayout);
-#undef MAKE_RAII;
+#undef MAKE_RAII
     }
 }
