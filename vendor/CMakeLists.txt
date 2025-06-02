@@ -14,6 +14,11 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(VMA)
 
+FetchContent_MakeAvailable(VMA)
+
+add_library(vma_static STATIC vma/vk_mem_alloc.cpp)
+target_include_directories(vma_static PUBLIC ${vma_SOURCE_DIR})
+
 FetchContent_Declare(
   glm
   GIT_REPOSITORY https://github.com/g-truc/glm.git
