@@ -1,4 +1,5 @@
 #include "init.hpp"
+#include "rendering/renderer.hpp"
 using namespace vblck;
 
 std::shared_ptr<spdlog::logger> logger;
@@ -6,37 +7,50 @@ std::shared_ptr<spdlog::logger> logger;
 namespace vblck
 {
 
-    std::shared_ptr<spdlog::logger> &getLogger()
-    {
-        return logger;
-    }
-}
-
-int main(int argc, char **argv)
+std::shared_ptr<spdlog::logger>& getLogger()
 {
-    logger = spdlog::stdout_color_mt("VKP");
+	return logger;
+}
+} // namespace vblck
 
-    System system{};
+int main(int argc, char** argv)
+{
+	logger = spdlog::stdout_color_mt("VKP");
 
-    system = initSystem("Vulkan App", 640, 480);
+	System system{};
 
-    bool running = true;
+	system = initSystemLinux("Vulkan App", 640, 480);
 
-    while (running)
-    {
-        SDL_Event e;
-        while (SDL_PollEvent(&e))
-        {
-            switch (e.type)
-            {
-            case SDL_EVENT_QUIT:
-                running = false;
-                break;
-            }
-        }
-    }
+	{
 
-    finishSystem(system);
+		render::Renderer renderer(system.instance,
+								  system.chosenGPU,
+								  system.device,
+								  system.surface,
+								  system.graphicsQueue,
+								  system.graphicsQueueFamily,
+								  640,
+								  480);
 
-    return 0;
+		bool running = true;
+		while(running)
+		{
+			SDL_Event e;
+			while(SDL_PollEvent(&e))
+			{
+				switch(e.type)
+				{
+				case SDL_EVENT_QUIT:
+					running = false;
+					break;
+				}
+			}
+
+			renderer.renderFrame();
+		}
+	}
+
+	finishSystemLinux(system);
+
+	return 0;
 }
