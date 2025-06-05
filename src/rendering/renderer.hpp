@@ -1,6 +1,9 @@
+#include "command_buffer.hpp"
+#include "texture_2d.hpp"
 #include "types.hpp"
 #include "vk/deletion.hpp"
 #include <functional>
+#include <memory>
 #include <vector>
 namespace vblck
 {
@@ -15,7 +18,7 @@ struct FrameData
 	VkFence renderFence;
 
 	VkCommandPool commandPool;
-	VkCommandBuffer mainCommandBuffer;
+	std::unique_ptr<CommandBuffer> mainCommandBuffer;
 
 	vk::DeletionQueue deletionQueue;
 };
@@ -40,20 +43,31 @@ private:
 	VkExtent2D screenExtent{};
 
 	vk::DeletionQueue mainDeletionQueue;
+	vk::DeletionQueue frameDeletionQueue;
 
 	FrameData frames[FRAME_OVERLAP];
 
-	FrameData& getCurrentFrame()
-	{
-		return frames[frameNumber % FRAME_OVERLAP];
-	};
+	std::unique_ptr<Texture2D> backbuffer;
 
+	void initVMA();
 	void initCommands();
 	void initSyncStructures();
 
 	void destroySwapchain();
-
 	void cleanup();
+
+	void renderLogic(CommandBuffer* cmd);
+
+	inline void deletePendingObjects()
+	{
+		for(size_t i = 0; i < FRAME_OVERLAP; i++)
+		{
+			frames[i].deletionQueue.deleteQueue(device, vma);
+		}
+		frameDeletionQueue.deleteQueue(device, vma);
+	}
+
+	static Renderer* renderInstance;
 
 public:
 	Renderer(VkInstance instance,
@@ -71,7 +85,9 @@ public:
 		, graphicsQueue(graphicsQueue)
 		, graphicsQueueFamily(graphicsQueueFamily)
 	{
+		renderInstance = this;
 		frameNumber = 0;
+		initVMA();
 		recreateSwapchain(w, h);
 		initCommands();
 		initSyncStructures();
@@ -81,6 +97,16 @@ public:
 	{
 		cleanup();
 	}
+
+	static inline Renderer* get()
+	{
+		return renderInstance;
+	}
+
+	FrameData& getCurrentFrame()
+	{
+		return frames[frameNumber % FRAME_OVERLAP];
+	};
 
 	void recreateSwapchain(int w, int h);
 

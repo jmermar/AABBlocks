@@ -43,6 +43,10 @@ int main(int argc, char** argv)
 				case SDL_EVENT_QUIT:
 					running = false;
 					break;
+				case SDL_EVENT_WINDOW_RESIZED:
+					auto w = e.window.data1;
+					auto h = e.window.data2;
+					renderer.recreateSwapchain(w, h);
 				}
 			}
 

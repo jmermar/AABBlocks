@@ -17,6 +17,12 @@ void DeletionQueue::deleteQueue(VkDevice device, VmaAllocator vma)
 	}
 	semaphores.clear();
 
+	for(auto sampler : samplers)
+	{
+		vkDestroySampler(device, sampler, nullptr);
+	}
+	samplers.clear();
+
 	for(auto imageView : imageViews)
 	{
 		vkDestroyImageView(device, imageView, nullptr);
@@ -39,7 +45,7 @@ void DeletionQueue::deleteQueue(VkDevice device, VmaAllocator vma)
 	{
 		vkDestroyCommandPool(device, commandPool, nullptr);
 	}
-	buffers.clear();
+	commandPools.clear();
 }
 } // namespace vk
 } // namespace vblck

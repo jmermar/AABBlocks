@@ -10,6 +10,7 @@ struct DeletionQueue
 	std::vector<Buffer> buffers;
 	std::vector<Image> images;
 	std::vector<VkImageView> imageViews;
+	std::vector<VkSampler> samplers;
 	std::vector<VkSemaphore> semaphores;
 	std::vector<VkFence> fences;
 	std::vector<VkCommandPool> commandPools;

@@ -1,8 +1,7 @@
 #include "renderer.hpp"
-#include "render_command_buffer.hpp"
 #include "utils/logger.hpp"
 #include "vk/init.hpp"
-#include "vk/util.hpp"
+#include "vk/textures.hpp"
 #include <SDL3/SDL_vulkan.h>
 #include <VkBootstrap.h>
 constexpr bool bUseValidationLayers = true;
@@ -11,8 +10,10 @@ namespace vblck
 namespace render
 {
 
+Renderer* Renderer::renderInstance = 0;
 void Renderer::destroySwapchain()
 {
+	backbuffer = 0;
 	if(swapchain != VK_NULL_HANDLE)
 	{
 		vkDestroySwapchainKHR(device, swapchain, nullptr);
@@ -32,13 +33,24 @@ void Renderer::cleanup()
 {
 	vkDeviceWaitIdle(device);
 	destroySwapchain();
+	deletePendingObjects();
 	mainDeletionQueue.deleteQueue(device, vma);
+	vmaDestroyAllocator(vma);
+}
+
+void Renderer::renderLogic(CommandBuffer* cmd)
+{
+	backbuffer->transition(cmd, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+	backbuffer->clear(cmd, 1, 0, 0, 0);
+	backbuffer->transition(cmd, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 }
 
 void Renderer::recreateSwapchain(int w, int h)
 {
 	if(swapchain != VK_NULL_HANDLE)
 	{
+		vkDeviceWaitIdle(device);
+		deletePendingObjects();
 		destroySwapchain();
 	}
 
@@ -60,6 +72,8 @@ void Renderer::recreateSwapchain(int w, int h)
 	swapchain = vkbSwapchain.swapchain;
 	swapchainImages = vkbSwapchain.get_images().value();
 	swapchainImageViews = vkbSwapchain.get_image_views().value();
+
+	backbuffer = std::make_unique<Texture2D>(device, vma, frameDeletionQueue, w, h, 1);
 }
 
 void Renderer::renderFrame()
@@ -68,6 +82,7 @@ void Renderer::renderFrame()
 	vkResetFences(device, 1, &getCurrentFrame().renderFence);
 
 	getCurrentFrame().deletionQueue.deleteQueue(device, vma);
+	getCurrentFrame().deletionQueue = std::move(frameDeletionQueue);
 
 	uint32_t swapchainImageIndex;
 
@@ -85,39 +100,31 @@ void Renderer::renderFrame()
 
 	vkResetFences(device, 1, &getCurrentFrame().renderFence);
 
-	RenderCommandBuffer cmd(device,
-							graphicsQueue,
-							getCurrentFrame().mainCommandBuffer,
-							getCurrentFrame().swapchainSemaphore,
-							getCurrentFrame().renderSemaphore,
-							getCurrentFrame().renderFence);
+	auto* cmd = getCurrentFrame().mainCommandBuffer.get();
 
-	cmd.begin();
+	cmd->begin();
 
-	cmd.transitionImage(
-		swapchainImages[swapchainImageIndex], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+	renderLogic(cmd);
 
-	//make a clear-color from frame number. This will flash with a 120 frame period.
-	VkClearColorValue clearValue;
-	float flash = std::abs(std::sin(frameNumber / 120.f));
-	clearValue = {{0.0f, 0.0f, flash, 1.0f}};
+	cmd->transitionImage(swapchainImages[swapchainImageIndex],
+						 VK_IMAGE_LAYOUT_UNDEFINED,
+						 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-	VkImageSubresourceRange clearRange = vk::Init::imageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT);
-
-	//clear image
-	vkCmdClearColorImage(cmd.getCmd(),
+	vk::copyImageToImage(cmd->getCmd(),
+						 backbuffer->getImage(),
 						 swapchainImages[swapchainImageIndex],
-						 VK_IMAGE_LAYOUT_GENERAL,
-						 &clearValue,
-						 1,
-						 &clearRange);
+						 backbuffer->getSize(),
+						 screenExtent,
+						 0,
+						 0);
+	cmd->transitionImage(swapchainImages[swapchainImageIndex],
+						 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+						 VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
-	//make the swapchain image into presentable mode
-	cmd.transitionImage(swapchainImages[swapchainImageIndex],
-						VK_IMAGE_LAYOUT_GENERAL,
-						VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-
-	cmd.submit();
+	cmd->submit(graphicsQueue,
+				getCurrentFrame().renderFence,
+				getCurrentFrame().renderSemaphore,
+				getCurrentFrame().swapchainSemaphore);
 
 	VkPresentInfoKHR presentInfo = vk::Init::presentInfo();
 
@@ -134,6 +141,16 @@ void Renderer::renderFrame()
 	frameNumber++;
 }
 
+void Renderer::initVMA()
+{
+	VmaAllocatorCreateInfo allocatorInfo = {};
+	allocatorInfo.physicalDevice = chosenGPU;
+	allocatorInfo.device = device;
+	allocatorInfo.instance = instance;
+	allocatorInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
+	vmaCreateAllocator(&allocatorInfo, &vma);
+}
+
 void Renderer::initCommands()
 {
 	VkCommandPoolCreateInfo commandPoolInfo = vk::Init::commandPoolCreateInfo(
@@ -144,10 +161,8 @@ void Renderer::initCommands()
 
 		vkCreateCommandPool(device, &commandPoolInfo, nullptr, &frames[i].commandPool);
 
-		VkCommandBufferAllocateInfo cmdAllocInfo =
-			vk::Init::commandBufferCreateInfo(frames[i].commandPool);
-
-		vkAllocateCommandBuffers(device, &cmdAllocInfo, &frames[i].mainCommandBuffer);
+		frames[i].mainCommandBuffer =
+			std::make_unique<CommandBuffer>(device, frames[i].commandPool);
 
 		mainDeletionQueue.commandPools.push_back(frames[i].commandPool);
 	}
