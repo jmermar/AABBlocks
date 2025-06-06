@@ -1,5 +1,6 @@
 #pragma once
 
+#include "utils/logger.hpp"
 #include "vk/init.hpp"
 #include "vulkan/vulkan.hpp"
 #include <vk_mem_alloc.h>
@@ -25,7 +26,7 @@ public:
 
 	inline void begin()
 	{
-		vkResetCommandBuffer(cmd, 0);
+		VKTRY(vkResetCommandBuffer(cmd, 0));
 
 		VkCommandBufferBeginInfo info = {};
 		info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -34,7 +35,7 @@ public:
 		info.pInheritanceInfo = nullptr;
 		info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
-		vkBeginCommandBuffer(cmd, &info);
+		VKTRY(vkBeginCommandBuffer(cmd, &info));
 	}
 
 	void submit(VkQueue queue,

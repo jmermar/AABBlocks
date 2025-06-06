@@ -8,7 +8,7 @@ System initSystemLinux(const char* win_name, int W, int H)
 	System system;
 	SDL_Init(SDL_INIT_VIDEO);
 
-	SDL_WindowFlags window_flags = SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE;
+	SDL_WindowFlags window_flags = SDL_WINDOW_VULKAN;
 
 	system.window = SDL_CreateWindow(win_name, W, H, window_flags);
 

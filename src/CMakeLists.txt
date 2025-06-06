@@ -6,7 +6,9 @@ file(GLOB_RECURSE SRC
      "platform/linux/*.cpp"
 )
 
-add_executable (${PROJECT_NAME} ${SRC})
+add_executable (${PROJECT_NAME} ${SRC}
+    utils/files.hpp
+    utils/files.cpp)
 
 add_dependencies(${PROJECT_NAME} Shaders)
 
@@ -26,11 +28,13 @@ find_package(Vulkan REQUIRED)
 
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE
     ${Vulkan_LIBRARIES}
-    SDL3-static
+    SDL3::SDL3
     glm
     vma_static
     spdlog::spdlog
     vk-bootstrap::vk-bootstrap
+    stb_image
+    imgui
 )
 
 target_include_directories(${CMAKE_PROJECT_NAME}

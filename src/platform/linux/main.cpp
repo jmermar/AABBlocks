@@ -1,5 +1,9 @@
 #include "init.hpp"
+#include "init_imgui.hpp"
 #include "rendering/renderer.hpp"
+#include <backends/imgui_impl_sdl3.h>
+#include <backends/imgui_impl_vulkan.h>
+
 using namespace vblck;
 
 std::shared_ptr<spdlog::logger> logger;
@@ -19,7 +23,8 @@ int main(int argc, char** argv)
 
 	System system{};
 
-	system = initSystemLinux("Vulkan App", 640, 480);
+	system = initSystemLinux("Vulkan App", 1920, 1080);
+	auto imguiInstance = initImgui(system);
 
 	{
 
@@ -48,11 +53,22 @@ int main(int argc, char** argv)
 					auto h = e.window.data2;
 					renderer.recreateSwapchain(w, h);
 				}
+				ImGui_ImplSDL3_ProcessEvent(&e);
 			}
+
+			ImGui_ImplVulkan_NewFrame();
+			ImGui_ImplSDL3_NewFrame();
+			ImGui::NewFrame();
+
+			ImGui::ShowDemoWindow();
+
+			ImGui::Render();
 
 			renderer.renderFrame();
 		}
 	}
+
+	finishImgui(system, imguiInstance);
 
 	finishSystemLinux(system);
 

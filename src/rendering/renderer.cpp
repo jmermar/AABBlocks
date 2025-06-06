@@ -4,6 +4,8 @@
 #include "vk/textures.hpp"
 #include <SDL3/SDL_vulkan.h>
 #include <VkBootstrap.h>
+#include <backends/imgui_impl_vulkan.h>
+#include <imgui.h>
 constexpr bool bUseValidationLayers = true;
 namespace vblck
 {
@@ -43,6 +45,24 @@ void Renderer::renderLogic(CommandBuffer* cmd)
 	backbuffer->transition(cmd, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 	backbuffer->clear(cmd, 1, 0, 0, 0);
 	backbuffer->transition(cmd, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+}
+
+void Renderer::renderImGUI(VkCommandBuffer cmd, VkImageView targetImageView)
+{
+	VkRenderingAttachmentInfo colorAttachment = vk::Init::attachementInfo(
+		targetImageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+	VkRenderingInfo renderInfo{};
+	renderInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+	renderInfo.colorAttachmentCount = 1;
+	renderInfo.pColorAttachments = &colorAttachment;
+	renderInfo.renderArea = VkRect2D{VkOffset2D{0, 0}, screenExtent};
+	renderInfo.layerCount = 1;
+
+	vkCmdBeginRendering(cmd, &renderInfo);
+
+	ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmd);
+
+	vkCmdEndRendering(cmd);
 }
 
 void Renderer::recreateSwapchain(int w, int h)
@@ -98,7 +118,7 @@ void Renderer::renderFrame()
 		return;
 	}
 
-	vkResetFences(device, 1, &getCurrentFrame().renderFence);
+	VKTRY(vkResetFences(device, 1, &getCurrentFrame().renderFence));
 
 	auto* cmd = getCurrentFrame().mainCommandBuffer.get();
 
@@ -117,8 +137,14 @@ void Renderer::renderFrame()
 						 screenExtent,
 						 0,
 						 0);
+
 	cmd->transitionImage(swapchainImages[swapchainImageIndex],
 						 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+						 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+	renderImGUI(cmd->getCmd(), swapchainImageViews[swapchainImageIndex]);
+	cmd->transitionImage(swapchainImages[swapchainImageIndex],
+						 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 						 VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
 	cmd->submit(graphicsQueue,
@@ -136,7 +162,7 @@ void Renderer::renderFrame()
 
 	presentInfo.pImageIndices = &swapchainImageIndex;
 
-	vkQueuePresentKHR(graphicsQueue, &presentInfo);
+	VKTRY(vkQueuePresentKHR(graphicsQueue, &presentInfo));
 
 	frameNumber++;
 }
@@ -148,7 +174,7 @@ void Renderer::initVMA()
 	allocatorInfo.device = device;
 	allocatorInfo.instance = instance;
 	allocatorInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
-	vmaCreateAllocator(&allocatorInfo, &vma);
+	VKTRY(vmaCreateAllocator(&allocatorInfo, &vma));
 }
 
 void Renderer::initCommands()
@@ -159,7 +185,7 @@ void Renderer::initCommands()
 	for(size_t i = 0; i < FRAME_OVERLAP; i++)
 	{
 
-		vkCreateCommandPool(device, &commandPoolInfo, nullptr, &frames[i].commandPool);
+		VKTRY(vkCreateCommandPool(device, &commandPoolInfo, nullptr, &frames[i].commandPool));
 
 		frames[i].mainCommandBuffer =
 			std::make_unique<CommandBuffer>(device, frames[i].commandPool);
@@ -174,11 +200,12 @@ void Renderer::initSyncStructures()
 
 	for(size_t i = 0; i < FRAME_OVERLAP; i++)
 	{
-		vkCreateFence(device, &fenceCreateInfo, nullptr, &frames[i].renderFence);
+		VKTRY(vkCreateFence(device, &fenceCreateInfo, nullptr, &frames[i].renderFence));
 
-		vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &frames[i].swapchainSemaphore);
+		VKTRY(vkCreateSemaphore(
+			device, &semaphoreCreateInfo, nullptr, &frames[i].swapchainSemaphore));
 
-		vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &frames[i].renderSemaphore);
+		VKTRY(vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &frames[i].renderSemaphore));
 		mainDeletionQueue.fences.push_back(frames[i].renderFence);
 		mainDeletionQueue.semaphores.push_back(frames[i].renderSemaphore);
 		mainDeletionQueue.semaphores.push_back(frames[i].swapchainSemaphore);

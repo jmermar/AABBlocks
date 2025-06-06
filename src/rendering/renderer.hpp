@@ -52,11 +52,13 @@ private:
 	void initVMA();
 	void initCommands();
 	void initSyncStructures();
+	void initIMGUI();
 
 	void destroySwapchain();
 	void cleanup();
 
 	void renderLogic(CommandBuffer* cmd);
+	void renderImGUI(VkCommandBuffer cmd, VkImageView targetImageView);
 
 	inline void deletePendingObjects()
 	{

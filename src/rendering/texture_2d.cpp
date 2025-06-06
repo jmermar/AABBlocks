@@ -27,7 +27,7 @@ void Texture2D::createTexture()
 
 	VkImage image{};
 	VmaAllocation alloc{};
-	vmaCreateImage(vma, &imageInfo, &allocInfo, &image, &alloc, nullptr);
+	VKTRY(vmaCreateImage(vma, &imageInfo, &allocInfo, &image, &alloc, nullptr));
 
 	data.allocation = alloc;
 	data.image = image;
@@ -45,7 +45,7 @@ void Texture2D::createViewAndSampler()
 	viewInfo.subresourceRange.baseArrayLayer = 0;
 	viewInfo.subresourceRange.layerCount = 1;
 
-	vkCreateImageView(device, &viewInfo, nullptr, &imageView);
+	VKTRY(vkCreateImageView(device, &viewInfo, nullptr, &imageView));
 
 	VkSamplerCreateInfo samplerInfo{};
 	samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -64,7 +64,7 @@ void Texture2D::createViewAndSampler()
 	samplerInfo.maxLod = static_cast<float>(mipLevels);
 	samplerInfo.mipLodBias = 0.0f;
 
-	vkCreateSampler(device, &samplerInfo, nullptr, &sampler);
+	VKTRY(vkCreateSampler(device, &samplerInfo, nullptr, &sampler));
 }
 
 void Texture2D::clear(CommandBuffer* cmd, float r, float g, float b, float a)

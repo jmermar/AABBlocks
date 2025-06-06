@@ -17,14 +17,14 @@ CommandBuffer::CommandBuffer(VkDevice device, VkCommandPool pool)
 	info.commandBufferCount = 1;
 	info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 
-	vkAllocateCommandBuffers(device, &info, &cmd);
+	VKTRY(vkAllocateCommandBuffers(device, &info, &cmd));
 }
 void CommandBuffer::submit(VkQueue queue,
 						   VkFence renderFence,
 						   VkSemaphore renderSemaphore,
 						   VkSemaphore swapchainSemaphore)
 {
-	vkEndCommandBuffer(cmd);
+	VKTRY(vkEndCommandBuffer(cmd));
 
 	VkCommandBufferSubmitInfo cmdinfo = vk::Init::commandBufferSubmitInfo(cmd);
 
@@ -36,7 +36,7 @@ void CommandBuffer::submit(VkQueue queue,
 
 	VkSubmitInfo2 submit = vk::Init::submitInfo(&cmdinfo, &signalInfo, &waitInfo);
 
-	vkQueueSubmit2(queue, 1, &submit, renderFence);
+	VKTRY(vkQueueSubmit2(queue, 1, &submit, renderFence));
 }
 void CommandBuffer::transitionImage(VkImage image,
 									VkImageLayout currentLayout,
