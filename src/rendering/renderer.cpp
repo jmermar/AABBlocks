@@ -22,7 +22,7 @@ void Renderer::initTextures()
 	std::span<uint8_t> data = screenshotImg.data;
 	staging->write(data);
 	screenshot = std::make_unique<Texture2D>(
-		device, vma, frameDeletionQueue, screenshotImg.w, screenshotImg.h);
+		device, vma, frameDeletionQueue, screenshotImg.w, screenshotImg.h, 4);
 
 	bufferWritter.writeBufferToImage(staging->get(), screenshot.get());
 }
@@ -41,6 +41,7 @@ void Renderer::destroySwapchain()
 		vkDestroyImageView(device, swapchainImageViews[i], nullptr);
 		vkDestroySemaphore(device, renderSemaphores[i], nullptr);
 	}
+	renderSemaphores.clear();
 	swapchainImageViews.clear();
 	swapchainImages.clear();
 }
@@ -59,13 +60,7 @@ void Renderer::renderLogic(CommandBuffer* cmd)
 {
 	screenshot->transition(cmd, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 	backbuffer->transition(cmd, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-	vk::copyImageToImage(cmd->getCmd(),
-						 screenshot->getImage(),
-						 backbuffer->getImage(),
-						 screenshot->getSize(),
-						 backbuffer->getSize(),
-						 0,
-						 0);
+	backbuffer->copyFromImage(cmd, screenshot.get(), 3);
 
 	backbuffer->transition(cmd, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
 	backbuffer->transition(cmd, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
@@ -195,7 +190,7 @@ void Renderer::renderFrame()
 
 	presentInfo.pImageIndices = &swapchainImageIndex;
 
-	VKTRY(vkQueuePresentKHR(graphicsQueue, &presentInfo));
+	vkQueuePresentKHR(graphicsQueue, &presentInfo);
 
 	frameNumber++;
 }

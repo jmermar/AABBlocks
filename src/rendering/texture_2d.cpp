@@ -1,6 +1,7 @@
 #include "texture_2d.hpp"
 #include "renderer.hpp"
 #include "utils/logger.hpp"
+#include "vk/textures.hpp"
 namespace vblck
 {
 namespace render
@@ -67,7 +68,7 @@ void Texture2D::createViewAndSampler()
 	VKTRY(vkCreateSampler(device, &samplerInfo, nullptr, &sampler));
 }
 
-void Texture2D::regenerateBitmaps(CommandBuffer* cmd)
+void Texture2D::regenerateMipmaps(CommandBuffer* cmd)
 {
 	assert(mipLevels > 1);
 
@@ -213,7 +214,23 @@ void Texture2D::copyfromBuffer(CommandBuffer* cmd, VkBuffer srcBuffer)
 
 	if(mipLevels > 1)
 	{
-		regenerateBitmaps(cmd);
+		regenerateMipmaps(cmd);
+	}
+}
+
+void Texture2D::copyFromImage(CommandBuffer* cmd, Texture2D* src, size_t mipLevel)
+{
+	assert(cmd);
+	assert(src);
+	assert(mipLevel < src->mipLevels);
+	auto srcExtent = src->getSize();
+	srcExtent.height = std::max((uint32_t)1, srcExtent.height >> mipLevel);
+	srcExtent.width = std::max((uint32_t)1, srcExtent.width >> mipLevel);
+	vk::copyImageToImage(
+		cmd->getCmd(), src->getImage(), data.image, srcExtent, getSize(), mipLevel, 0);
+	if(mipLevels > 1)
+	{
+		regenerateMipmaps(cmd);
 	}
 }
 

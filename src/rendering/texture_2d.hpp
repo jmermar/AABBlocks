@@ -76,10 +76,12 @@ public:
 		return size;
 	}
 
-	void regenerateBitmaps(CommandBuffer* cmd);
+	void regenerateMipmaps(CommandBuffer* cmd);
 
 	void clear(CommandBuffer* cmd, float r, float g, float b, float a);
 	void copyfromBuffer(CommandBuffer* cmd, VkBuffer data);
+
+	void copyFromImage(CommandBuffer* cmd, Texture2D* src, size_t mipLevel);
 	void transition(CommandBuffer* cmd, VkImageLayout currentLayout, VkImageLayout newLayout);
 };
 } // namespace render
