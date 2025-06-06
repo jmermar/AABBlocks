@@ -26,6 +26,7 @@ void Renderer::destroySwapchain()
 	{
 
 		vkDestroyImageView(device, swapchainImageViews[i], nullptr);
+		vkDestroySemaphore(device, renderSemaphores[i], nullptr);
 	}
 	swapchainImageViews.clear();
 	swapchainImages.clear();
@@ -93,6 +94,13 @@ void Renderer::recreateSwapchain(int w, int h)
 	swapchainImages = vkbSwapchain.get_images().value();
 	swapchainImageViews = vkbSwapchain.get_image_views().value();
 
+	renderSemaphores.resize(swapchainImages.size());
+	VkSemaphoreCreateInfo semaphoreCreateInfo = vk::Init::semaphoreCreateInfo();
+	for(size_t i = 0; i < swapchainImages.size(); i++)
+	{
+		VKTRY(vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &renderSemaphores[i]));
+	}
+
 	backbuffer = std::make_unique<Texture2D>(device, vma, frameDeletionQueue, w, h, 1);
 }
 
@@ -149,7 +157,7 @@ void Renderer::renderFrame()
 
 	cmd->submit(graphicsQueue,
 				getCurrentFrame().renderFence,
-				getCurrentFrame().renderSemaphore,
+				renderSemaphores[swapchainImageIndex],
 				getCurrentFrame().swapchainSemaphore);
 
 	VkPresentInfoKHR presentInfo = vk::Init::presentInfo();
@@ -157,7 +165,7 @@ void Renderer::renderFrame()
 	presentInfo.pSwapchains = &swapchain;
 	presentInfo.swapchainCount = 1;
 
-	presentInfo.pWaitSemaphores = &getCurrentFrame().renderSemaphore;
+	presentInfo.pWaitSemaphores = &renderSemaphores[swapchainImageIndex];
 	presentInfo.waitSemaphoreCount = 1;
 
 	presentInfo.pImageIndices = &swapchainImageIndex;
@@ -205,9 +213,7 @@ void Renderer::initSyncStructures()
 		VKTRY(vkCreateSemaphore(
 			device, &semaphoreCreateInfo, nullptr, &frames[i].swapchainSemaphore));
 
-		VKTRY(vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &frames[i].renderSemaphore));
 		mainDeletionQueue.fences.push_back(frames[i].renderFence);
-		mainDeletionQueue.semaphores.push_back(frames[i].renderSemaphore);
 		mainDeletionQueue.semaphores.push_back(frames[i].swapchainSemaphore);
 	}
 }

@@ -26,47 +26,50 @@ int main(int argc, char** argv)
 	system = initSystemLinux("Vulkan App", 1920, 1080);
 	auto imguiInstance = initImgui(system);
 
+	auto* renderer = new render::Renderer(system.instance,
+										  system.chosenGPU,
+										  system.device,
+										  system.surface,
+										  system.graphicsQueue,
+										  system.graphicsQueueFamily,
+										  1920,
+										  1080);
+
+	bool running = true;
+	auto ticks = SDL_GetTicks();
+	uint64_t frameDelta = 0;
+	while(running)
 	{
-
-		render::Renderer renderer(system.instance,
-								  system.chosenGPU,
-								  system.device,
-								  system.surface,
-								  system.graphicsQueue,
-								  system.graphicsQueueFamily,
-								  640,
-								  480);
-
-		bool running = true;
-		while(running)
+		SDL_Event e;
+		while(SDL_PollEvent(&e))
 		{
-			SDL_Event e;
-			while(SDL_PollEvent(&e))
+			switch(e.type)
 			{
-				switch(e.type)
-				{
-				case SDL_EVENT_QUIT:
-					running = false;
-					break;
-				case SDL_EVENT_WINDOW_RESIZED:
-					auto w = e.window.data1;
-					auto h = e.window.data2;
-					renderer.recreateSwapchain(w, h);
-				}
-				ImGui_ImplSDL3_ProcessEvent(&e);
+			case SDL_EVENT_QUIT:
+				running = false;
+				break;
+			case SDL_EVENT_WINDOW_RESIZED:
+				auto w = e.window.data1;
+				auto h = e.window.data2;
+				renderer->recreateSwapchain(w, h);
 			}
-
-			ImGui_ImplVulkan_NewFrame();
-			ImGui_ImplSDL3_NewFrame();
-			ImGui::NewFrame();
-
-			ImGui::ShowDemoWindow();
-
-			ImGui::Render();
-
-			renderer.renderFrame();
+			ImGui_ImplSDL3_ProcessEvent(&e);
 		}
+
+		ImGui_ImplVulkan_NewFrame();
+		ImGui_ImplSDL3_NewFrame();
+		ImGui::NewFrame();
+
+		ImGui::Text("FPS: %f", 1000.f / frameDelta);
+
+		ImGui::Render();
+
+		renderer->renderFrame();
+
+		frameDelta = SDL_GetTicks() - ticks;
+		ticks = SDL_GetTicks();
 	}
+	delete renderer;
 
 	finishImgui(system, imguiInstance);
 
