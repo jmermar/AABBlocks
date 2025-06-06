@@ -1,4 +1,6 @@
+#include "buffer_writter.hpp"
 #include "command_buffer.hpp"
+#include "staging_buffer.hpp"
 #include "texture_2d.hpp"
 #include "types.hpp"
 #include "vk/deletion.hpp"
@@ -48,12 +50,17 @@ private:
 
 	FrameData frames[FRAME_OVERLAP];
 
+	BufferWritter bufferWritter;
+
 	std::unique_ptr<Texture2D> backbuffer;
+	std::unique_ptr<Texture2D> screenshot;
 
 	void initVMA();
 	void initCommands();
 	void initSyncStructures();
 	void initIMGUI();
+
+	void initTextures();
 
 	void destroySwapchain();
 	void cleanup();
@@ -94,6 +101,7 @@ public:
 		recreateSwapchain(w, h);
 		initCommands();
 		initSyncStructures();
+		initTextures();
 	}
 
 	~Renderer()

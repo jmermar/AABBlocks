@@ -76,7 +76,10 @@ public:
 		return size;
 	}
 
+	void regenerateBitmaps(CommandBuffer* cmd);
+
 	void clear(CommandBuffer* cmd, float r, float g, float b, float a);
+	void copyfromBuffer(CommandBuffer* cmd, VkBuffer data);
 	void transition(CommandBuffer* cmd, VkImageLayout currentLayout, VkImageLayout newLayout);
 };
 } // namespace render

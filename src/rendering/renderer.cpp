@@ -1,4 +1,5 @@
 #include "renderer.hpp"
+#include "utils/files.hpp"
 #include "utils/logger.hpp"
 #include "vk/init.hpp"
 #include "vk/textures.hpp"
@@ -13,6 +14,18 @@ namespace render
 {
 
 Renderer* Renderer::renderInstance = 0;
+void Renderer::initTextures()
+{
+	auto screenshotImg = readImageFromFile("res/textures/screenshot.png");
+	auto staging = std::make_unique<StagingBuffer>(
+		device, vma, &frameDeletionQueue, screenshotImg.data.size());
+	std::span<uint8_t> data = screenshotImg.data;
+	staging->write(data);
+	screenshot = std::make_unique<Texture2D>(
+		device, vma, frameDeletionQueue, screenshotImg.w, screenshotImg.h);
+
+	bufferWritter.writeBufferToImage(staging->get(), screenshot.get());
+}
 void Renderer::destroySwapchain()
 {
 	backbuffer = 0;
@@ -34,6 +47,7 @@ void Renderer::destroySwapchain()
 
 void Renderer::cleanup()
 {
+	screenshot = 0;
 	vkDeviceWaitIdle(device);
 	destroySwapchain();
 	deletePendingObjects();
@@ -43,8 +57,17 @@ void Renderer::cleanup()
 
 void Renderer::renderLogic(CommandBuffer* cmd)
 {
-	backbuffer->transition(cmd, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-	backbuffer->clear(cmd, 1, 0, 0, 0);
+	screenshot->transition(cmd, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+	backbuffer->transition(cmd, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+	vk::copyImageToImage(cmd->getCmd(),
+						 screenshot->getImage(),
+						 backbuffer->getImage(),
+						 screenshot->getSize(),
+						 backbuffer->getSize(),
+						 0,
+						 0);
+
+	backbuffer->transition(cmd, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
 	backbuffer->transition(cmd, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 }
 
@@ -131,6 +154,8 @@ void Renderer::renderFrame()
 	auto* cmd = getCurrentFrame().mainCommandBuffer.get();
 
 	cmd->begin();
+
+	bufferWritter.performWrites(cmd);
 
 	renderLogic(cmd);
 
