@@ -1,5 +1,6 @@
 #pragma once
 
+#include "utils/errors.hpp"
 #include "utils/logger.hpp"
 #include "vk/init.hpp"
 #include "vulkan/vulkan.hpp"

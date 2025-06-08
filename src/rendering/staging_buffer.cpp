@@ -16,7 +16,7 @@ void StagingBuffer::create()
 
 	VmaAllocationInfo allocationInfo{};
 	VKTRY(vmaCreateBuffer(
-		vma, &bufferInfo, &allocInfo, &data.buffer, &data.allocation, &allocationInfo))
+		vma, &bufferInfo, &allocInfo, &data.buffer, &data.allocation, &allocationInfo));
 
 	mappedData = allocationInfo.pMappedData;
 }

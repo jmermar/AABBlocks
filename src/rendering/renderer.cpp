@@ -2,6 +2,7 @@
 #include "utils/files.hpp"
 #include "utils/logger.hpp"
 #include "vk/init.hpp"
+#include "vk/one_time_commands.hpp"
 #include "vk/textures.hpp"
 #include <SDL3/SDL_vulkan.h>
 #include <VkBootstrap.h>
@@ -14,21 +15,9 @@ namespace render
 {
 
 Renderer* Renderer::renderInstance = 0;
-void Renderer::initTextures()
-{
-	auto screenshotImg = readImageFromFile("res/textures/screenshot.png");
-	auto staging = std::make_unique<StagingBuffer>(
-		device, vma, &frameDeletionQueue, screenshotImg.data.size());
-	std::span<uint8_t> data = screenshotImg.data;
-	staging->write(data);
-	screenshot = std::make_unique<Texture2D>(
-		device, vma, frameDeletionQueue, screenshotImg.w, screenshotImg.h, 4);
-
-	bufferWritter.writeBufferToImage(staging->get(), screenshot.get());
-}
 void Renderer::destroySwapchain()
 {
-	backbuffer = 0;
+	backbuffer.destroy(&frameDeletionQueue);
 	if(swapchain != VK_NULL_HANDLE)
 	{
 		vkDestroySwapchainKHR(device, swapchain, nullptr);
@@ -48,7 +37,6 @@ void Renderer::destroySwapchain()
 
 void Renderer::cleanup()
 {
-	screenshot = 0;
 	vkDeviceWaitIdle(device);
 	destroySwapchain();
 	deletePendingObjects();
@@ -58,12 +46,24 @@ void Renderer::cleanup()
 
 void Renderer::renderLogic(CommandBuffer* cmd)
 {
-	screenshot->transition(cmd, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-	backbuffer->transition(cmd, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-	backbuffer->copyFromImage(cmd, screenshot.get(), 3);
+	auto screenshot = loadTexture2D("res/textures/screenshot.png");
 
-	backbuffer->transition(cmd, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
-	backbuffer->transition(cmd, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+	screenshot.transition(
+		cmd->getCmd(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+	backbuffer.transition(
+		cmd->getCmd(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+	vk::copyImageToImage(cmd->getCmd(),
+						 screenshot.data.image,
+						 backbuffer.data.image,
+						 screenshot.extent,
+						 backbuffer.extent,
+						 0,
+						 0);
+
+	backbuffer.transition(
+		cmd->getCmd(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+	screenshot.destroy(&frameDeletionQueue);
 }
 
 void Renderer::renderImGUI(VkCommandBuffer cmd, VkImageView targetImageView)
@@ -84,10 +84,29 @@ void Renderer::renderImGUI(VkCommandBuffer cmd, VkImageView targetImageView)
 	vkCmdEndRendering(cmd);
 }
 
+vk::Texture2D Renderer::loadTexture2D(const char* path)
+{
+	auto image = readImageFromFile(path);
+	auto staging =
+		std::make_unique<StagingBuffer>(device, vma, &frameDeletionQueue, image.data.size());
+	std::span<uint8_t> data = image.data;
+	staging->write(data);
+	vk::Texture2D tex;
+	tex.createTexture(device, vma, {image.w, image.h}, 4);
+	bufferWritter.writeBufferToImage(staging->get(), tex);
+
+	return tex;
+}
+
 void Renderer::recreateSwapchain(int w, int h)
 {
 	if(swapchain != VK_NULL_HANDLE)
 	{
+		vk::oneTimeSubmission(
+			device,
+			graphicsQueue,
+			getCurrentFrame().commandPool,
+			[&](VkDevice device, VkCommandBuffer cmd) { bufferWritter.performWrites(cmd); });
 		vkDeviceWaitIdle(device);
 		deletePendingObjects();
 		destroySwapchain();
@@ -119,7 +138,7 @@ void Renderer::recreateSwapchain(int w, int h)
 		VKTRY(vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &renderSemaphores[i]));
 	}
 
-	backbuffer = std::make_unique<Texture2D>(device, vma, frameDeletionQueue, w, h, 1);
+	backbuffer.createTexture(device, vma, VkExtent2D{(unsigned int)w, (unsigned int)h}, 1);
 }
 
 void Renderer::renderFrame()
@@ -150,7 +169,7 @@ void Renderer::renderFrame()
 
 	cmd->begin();
 
-	bufferWritter.performWrites(cmd);
+	bufferWritter.performWrites(cmd->getCmd());
 
 	renderLogic(cmd);
 
@@ -159,9 +178,9 @@ void Renderer::renderFrame()
 						 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
 	vk::copyImageToImage(cmd->getCmd(),
-						 backbuffer->getImage(),
+						 backbuffer.data.image,
 						 swapchainImages[swapchainImageIndex],
-						 backbuffer->getSize(),
+						 backbuffer.extent,
 						 screenExtent,
 						 0,
 						 0);

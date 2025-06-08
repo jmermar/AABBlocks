@@ -1,13 +1,14 @@
 #include "buffer_writter.hpp"
+#include "vk/textures.hpp"
 
-void vblck::render::BufferWritter::performWrites(CommandBuffer* cmd)
+void vblck::render::BufferWritter::performWrites(VkCommandBuffer cmd)
 {
 	VkMemoryBarrier preCopyBarrier{};
 	preCopyBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
 	preCopyBarrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
 	preCopyBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
 
-	vkCmdPipelineBarrier(cmd->getCmd(),
+	vkCmdPipelineBarrier(cmd,
 						 VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
 						 VK_PIPELINE_STAGE_TRANSFER_BIT, // dstStage
 						 0,
@@ -20,8 +21,8 @@ void vblck::render::BufferWritter::performWrites(CommandBuffer* cmd)
 
 	for(auto& [buffer, image] : writesBufferToTexture2D)
 	{
-		image->transition(cmd, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-		image->copyfromBuffer(cmd, buffer);
+		image.transition(cmd, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+		image.copyFromBuffer(cmd, buffer);
 	}
 	writesBufferToTexture2D.clear();
 
@@ -30,7 +31,7 @@ void vblck::render::BufferWritter::performWrites(CommandBuffer* cmd)
 	postCopyBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 	postCopyBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
-	vkCmdPipelineBarrier(cmd->getCmd(),
+	vkCmdPipelineBarrier(cmd,
 						 VK_PIPELINE_STAGE_TRANSFER_BIT,
 						 VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, // dstStage
 						 0,
