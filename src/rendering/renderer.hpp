@@ -1,9 +1,9 @@
 #include "buffer_writter.hpp"
 #include "command_buffer.hpp"
-#include "staging_buffer.hpp"
 #include "types.hpp"
 #include "vk/deletion.hpp"
 #include "vk/textures.hpp"
+#include "world_renderer.hpp"
 #include <functional>
 #include <memory>
 #include <vector>
@@ -54,6 +54,8 @@ private:
 
 	vk::Texture2D backbuffer;
 
+	std::unique_ptr<WorldRenderer> worldRenderer;
+
 	void initVMA();
 	void initCommands();
 	void initSyncStructures();
@@ -64,6 +66,8 @@ private:
 
 	void renderLogic(CommandBuffer* cmd);
 	void renderImGUI(VkCommandBuffer cmd, VkImageView targetImageView);
+
+	void initRenderers();
 
 	inline void deletePendingObjects()
 	{
@@ -98,6 +102,8 @@ public:
 		recreateSwapchain(w, h);
 		initCommands();
 		initSyncStructures();
+
+		initRenderers();
 	}
 
 	~Renderer()
@@ -116,6 +122,11 @@ public:
 	};
 
 	vk::Texture2D loadTexture2D(const char* path);
+
+	vk::Texture2D* getBackbuffer()
+	{
+		return &backbuffer;
+	}
 
 	void recreateSwapchain(int w, int h);
 

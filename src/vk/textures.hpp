@@ -218,6 +218,22 @@ struct Texture2D
 
 		vkCmdPipelineBarrier2(cmd, &depInfo);
 	}
+
+	inline void clear(VkCommandBuffer cmd, float r, float g, float b, float a = 1)
+	{
+		VkClearColorValue color;
+		color.float32[0] = r;
+		color.float32[1] = g;
+		color.float32[2] = b;
+		color.float32[3] = a;
+		VkImageSubresourceRange range{};
+		range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		range.baseMipLevel = 0;
+		range.baseArrayLayer = 0;
+		range.layerCount = VK_REMAINING_ARRAY_LAYERS;
+		range.levelCount = VK_REMAINING_MIP_LEVELS;
+		vkCmdClearColorImage(cmd, data.image, VK_IMAGE_LAYOUT_GENERAL, &color, 1, &range);
+	}
 };
 
 } // namespace vk

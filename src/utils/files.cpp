@@ -1,6 +1,12 @@
 #include "files.hpp"
+#include "errors.hpp"
 #include "logger.hpp"
 #include "stb_image/stb_image.h"
+
+#include <cstdint>
+#include <fstream>
+#include <iostream>
+#include <vector>
 namespace vblck
 {
 ImageData readImageFromFile(const std::string& path)
@@ -24,5 +30,20 @@ ImageData readImageFromFile(const std::string& path)
 	stbi_image_free(data);
 
 	return img;
+}
+std::vector<uint8_t> loadBinaryFile(const std::string& path)
+{
+	std::ifstream file(path, std::ios::binary);
+
+	TRY(file);
+
+	file.seekg(0, std::ios::end);
+	std::streamsize size = file.tellg();
+	file.seekg(0, std::ios::beg);
+
+	std::vector<uint8_t> buffer(size);
+	TRY(file.read(reinterpret_cast<char*>(buffer.data()), size));
+
+	return buffer;
 }
 } // namespace vblck

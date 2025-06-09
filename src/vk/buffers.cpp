@@ -1,9 +1,14 @@
-#include "staging_buffer.hpp"
-#include "utils/logger.hpp"
-using namespace vblck::render;
+#include "buffers.hpp"
+#include "utils/errors.hpp"
 
-void StagingBuffer::create()
+namespace vblck
 {
+namespace vk
+{
+void StagingBuffer::create(VkDevice device, VmaAllocator vma, size_t size)
+{
+	assert(device && vma && size > 0);
+	assert(!data.buffer && !data.allocation);
 	VkBufferCreateInfo bufferInfo{};
 	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 	bufferInfo.size = size;
@@ -17,6 +22,7 @@ void StagingBuffer::create()
 	VmaAllocationInfo allocationInfo{};
 	VKTRY(vmaCreateBuffer(
 		vma, &bufferInfo, &allocInfo, &data.buffer, &data.allocation, &allocationInfo));
-
 	mappedData = allocationInfo.pMappedData;
 }
+} // namespace vk
+} // namespace vblck

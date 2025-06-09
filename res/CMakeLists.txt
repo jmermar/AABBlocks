@@ -1,1 +1,1 @@
-add_subdirectory(shaderSources)
+add_subdirectory(shaders)

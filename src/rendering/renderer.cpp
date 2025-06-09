@@ -1,6 +1,7 @@
 #include "renderer.hpp"
 #include "utils/files.hpp"
 #include "utils/logger.hpp"
+#include "vk/buffers.hpp"
 #include "vk/init.hpp"
 #include "vk/one_time_commands.hpp"
 #include "vk/textures.hpp"
@@ -38,6 +39,7 @@ void Renderer::destroySwapchain()
 void Renderer::cleanup()
 {
 	vkDeviceWaitIdle(device);
+	worldRenderer = 0;
 	destroySwapchain();
 	deletePendingObjects();
 	mainDeletionQueue.deleteQueue(device, vma);
@@ -46,24 +48,16 @@ void Renderer::cleanup()
 
 void Renderer::renderLogic(CommandBuffer* cmd)
 {
-	auto screenshot = loadTexture2D("res/textures/screenshot.png");
-
-	screenshot.transition(
-		cmd->getCmd(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+	backbuffer.transition(cmd->getCmd(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+	backbuffer.clear(cmd->getCmd(), 0, 0, 0);
 	backbuffer.transition(
-		cmd->getCmd(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+		cmd->getCmd(), VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
-	vk::copyImageToImage(cmd->getCmd(),
-						 screenshot.data.image,
-						 backbuffer.data.image,
-						 screenshot.extent,
-						 backbuffer.extent,
-						 0,
-						 0);
+	worldRenderer->render(cmd->getCmd());
 
-	backbuffer.transition(
-		cmd->getCmd(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-	screenshot.destroy(&frameDeletionQueue);
+	backbuffer.transition(cmd->getCmd(),
+						  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+						  VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 }
 
 void Renderer::renderImGUI(VkCommandBuffer cmd, VkImageView targetImageView)
@@ -84,17 +78,21 @@ void Renderer::renderImGUI(VkCommandBuffer cmd, VkImageView targetImageView)
 	vkCmdEndRendering(cmd);
 }
 
+void Renderer::initRenderers()
+{
+	worldRenderer = std::make_unique<WorldRenderer>(device, vma);
+}
+
 vk::Texture2D Renderer::loadTexture2D(const char* path)
 {
 	auto image = readImageFromFile(path);
-	auto staging =
-		std::make_unique<StagingBuffer>(device, vma, &frameDeletionQueue, image.data.size());
-	std::span<uint8_t> data = image.data;
-	staging->write(data);
+	vk::StagingBuffer buffer{};
+	buffer.create(device, vma, image.data.size());
+	buffer.write((std::span<uint8_t>)image.data);
 	vk::Texture2D tex;
 	tex.createTexture(device, vma, {image.w, image.h}, 4);
-	bufferWritter.writeBufferToImage(staging->get(), tex);
-
+	bufferWritter.writeBufferToImage(buffer.data.buffer, tex);
+	buffer.destroy(&frameDeletionQueue);
 	return tex;
 }
 
