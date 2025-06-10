@@ -1,6 +1,5 @@
 #include "buffer_writter.hpp"
 #include "vk/textures.hpp"
-
 void vblck::render::BufferWritter::performWrites(VkCommandBuffer cmd)
 {
 	VkMemoryBarrier preCopyBarrier{};
@@ -25,6 +24,11 @@ void vblck::render::BufferWritter::performWrites(VkCommandBuffer cmd)
 		image.copyFromBuffer(cmd, buffer);
 	}
 	writesBufferToTexture2D.clear();
+
+	for(auto& [src, dst, size] : writesBufferToBuffer)
+	{
+		vk::copyBufferToBuffer(cmd, src, dst, size, 0, 0);
+	}
 
 	VkMemoryBarrier postCopyBarrier{};
 	postCopyBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;

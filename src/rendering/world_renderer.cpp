@@ -3,11 +3,18 @@
 #include "utils/files.hpp"
 #include "vk/descriptors.hpp"
 #include "vk/graphics_pipeline.hpp"
-
+#include <glm/glm.hpp>
 namespace vblck
 {
 namespace render
 {
+
+struct VertexData
+{
+	glm::vec2 pos;
+	glm::vec2 color;
+};
+
 void WorldRenderer::initPipelineLayout()
 {
 	VkPipelineLayoutCreateInfo layoutInfo{.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
