@@ -168,7 +168,7 @@ vk::Texture2DArray Renderer::loadTexture2DArray(const char* path, int ncols, int
 	buffer.create(device, vma, image.data.size());
 	buffer.write((std::span<uint8_t>)image.data);
 	vk::Texture2DArray tex;
-	tex.createTexture(device, vma, {image.w, image.h}, image.layers, 1);
+	tex.createTexture(device, vma, {image.w, image.h}, image.layers, 4);
 	bufferWritter.writeBufferToTexture2DArray(buffer.data.buffer, tex);
 	buffer.destroy(&frameDeletionQueue);
 	return tex;

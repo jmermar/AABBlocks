@@ -102,7 +102,7 @@ void ChunkRenderer::createBuffers()
 	precomputedStaging.create(render->device, render->vma, sizeof(Face) * 6);
 	precomputedStaging.write(std::span<Face>(precomputedVerticesData));
 	render->bufferWritter.writeToSSBO(precomputedStaging.data.buffer, &precomputedVertices);
-	//precomputedStaging.destroy(&render->frameDeletionQueue);
+	precomputedStaging.destroy(&render->frameDeletionQueue);
 }
 void ChunkRenderer::createPipeline()
 {
@@ -196,7 +196,7 @@ ChunkData* ChunkRenderer ::loadChunk(glm::vec3 position, std::span<ChunkFaceData
 	staging.create(render->device, render->vma, sizeof(Face) * 6);
 	staging.write(data);
 	render->bufferWritter.writeToSSBO(staging.data.buffer, &chunk->vertexData);
-	//staging.destroy(&render->frameDeletionQueue);
+	staging.destroy(&render->frameDeletionQueue);
 	chunk->numVertices = data.size() * 6;
 	VkBufferDeviceAddressInfo addrInfo{.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO};
 	addrInfo.buffer = chunk->vertexData.data.buffer;

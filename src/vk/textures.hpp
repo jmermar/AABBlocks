@@ -105,7 +105,18 @@ inline void regenerateMipmaps(
 	barrier.subresourceRange.baseMipLevel = 0;
 	barrier.subresourceRange.levelCount = 1;
 	barrier.subresourceRange.baseArrayLayer = 0;
-	barrier.subresourceRange.layerCount = 1;
+	barrier.subresourceRange.layerCount = layers;
+
+	vkCmdPipelineBarrier(cmd,
+						 VK_PIPELINE_STAGE_TRANSFER_BIT,
+						 VK_PIPELINE_STAGE_TRANSFER_BIT,
+						 0,
+						 0,
+						 nullptr,
+						 0,
+						 nullptr,
+						 1,
+						 &barrier);
 
 	uint32_t mipWidth = extent.width;
 	uint32_t mipHeight = extent.height;
