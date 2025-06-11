@@ -1,6 +1,7 @@
 #include "init.hpp"
 #include "init_imgui.hpp"
 #include "rendering/renderer.hpp"
+#include "world/world.hpp"
 #include <backends/imgui_impl_sdl3.h>
 #include <backends/imgui_impl_vulkan.h>
 
@@ -23,6 +24,9 @@ int main(int argc, char** argv)
 
 	System system{};
 
+	world::World* world = new world::World;
+	world->generateWorld();
+
 	system = initSystemLinux("Vulkan App", 1920, 1080);
 	auto imguiInstance = initImgui(system);
 
@@ -39,10 +43,23 @@ int main(int argc, char** argv)
 	auto ticks = SDL_GetTicks();
 
 	render::RenderSate renderState{};
-	renderState.camera.position = glm::vec3(-5, 5, -5);
-	renderState.camera.forward = glm::vec3(5, -5, 5);
 	uint64_t frameDelta = 0;
 	float acc = 0;
+
+	for(auto& ys : world->chunks)
+	{
+		for(auto& xs : ys)
+		{
+			for(auto& chunk : xs)
+			{
+				auto data = chunk.generateChunkData();
+				if(data.size() > 0)
+				{
+					renderer->worldRenderer->chunkRenderer.loadChunk(chunk.position, data);
+				}
+			}
+		}
+	}
 	while(running)
 	{
 		SDL_Event e;
@@ -62,10 +79,10 @@ int main(int argc, char** argv)
 		}
 		acc += frameDelta / 1000.f;
 
-		renderState.camera.position.x = glm::cos(acc) * 5;
-		renderState.camera.position.z = glm::sin(acc) * 5;
-		renderState.camera.position.y = 0;
-		renderState.camera.forward = -renderState.camera.position;
+		renderState.camera.position.x = 200 + glm::cos(acc) * 20;
+		renderState.camera.position.z = 200 + glm::sin(acc) * 20;
+		renderState.camera.position.y = 30;
+		renderState.camera.forward = glm::vec3(200, 10, 200) - renderState.camera.position;
 
 		ImGui_ImplVulkan_NewFrame();
 		ImGui_ImplSDL3_NewFrame();
@@ -85,6 +102,8 @@ int main(int argc, char** argv)
 	finishImgui(system, imguiInstance);
 
 	finishSystemLinux(system);
+
+	delete world;
 
 	return 0;
 }

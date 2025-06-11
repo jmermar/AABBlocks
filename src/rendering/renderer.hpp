@@ -89,6 +89,7 @@ struct Renderer
 	BufferWritter bufferWritter;
 
 	vk::Texture2D backbuffer;
+	vk::DepthTexture depthBuffer;
 
 	std::unique_ptr<WorldRenderer> worldRenderer;
 

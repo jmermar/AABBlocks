@@ -1,4 +1,5 @@
 #pragma once
+#include "types.hpp"
 #include "vk/buffers.hpp"
 #include "vk/descriptors.hpp"
 #include "vk/textures.hpp"
@@ -9,13 +10,6 @@ namespace vblck
 {
 namespace render
 {
-struct ChunkFaceData
-{
-	glm::vec3 position;
-	uint32_t face;
-	uint32_t textureId;
-	uint32_t pad[3];
-};
 
 struct ChunkData
 {

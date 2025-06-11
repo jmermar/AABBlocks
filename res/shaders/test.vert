@@ -41,6 +41,6 @@ void main()
     ChunkFace face = pc.faces.faces[idx / 6];
 	Vertex vertex = vertices[face.face * 6 + fineIdx];
 
-	gl_Position = ubo.projView * vec4((pc.position + vertex.pos), 1);
+	gl_Position = ubo.projView * vec4((pc.position + face.position + vertex.pos), 1);
 	outUv = vec3(vertex.uv, face.textureId);
 }

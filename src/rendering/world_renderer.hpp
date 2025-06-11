@@ -7,9 +7,8 @@ namespace vblck
 {
 namespace render
 {
-class WorldRenderer
+struct WorldRenderer
 {
-private:
 	VkDevice device{};
 	VmaAllocator vma{};
 	vk::DescriptorAllocator descriptorAllocator;
@@ -18,7 +17,6 @@ private:
 	void initDescriptorPool();
 	void create();
 
-public:
 	WorldRenderer(VkDevice device, VmaAllocator vma)
 		: device(device)
 		, vma(vma)

@@ -150,11 +150,11 @@ void ChunkRenderer::createPipeline()
 	//no blending
 	pipelineBuilder.disable_blending();
 	//no depth testing
-	pipelineBuilder.disable_depthtest();
+	pipelineBuilder.set_depth_format(VK_FORMAT_D32_SFLOAT);
+	pipelineBuilder.enable_depthtest();
 
 	//connect the image format we will draw into, from draw image
 	pipelineBuilder.set_color_attachment_format(VK_FORMAT_R8G8B8A8_UNORM);
-	pipelineBuilder.set_depth_format(VK_FORMAT_UNDEFINED);
 
 	//finally build the pipeline
 	pipeline = pipelineBuilder.buildPipeline(render->device);
@@ -193,7 +193,7 @@ ChunkData* ChunkRenderer ::loadChunk(glm::vec3 position, std::span<ChunkFaceData
 	chunk->position = position;
 	chunk->vertexData.create(render->device, render->vma, sizeof(ChunkFaceData) * data.size());
 	vk::StagingBuffer staging;
-	staging.create(render->device, render->vma, sizeof(Face) * 6);
+	staging.create(render->device, render->vma, sizeof(ChunkFaceData) * data.size());
 	staging.write(data);
 	render->bufferWritter.writeToSSBO(staging.data.buffer, &chunk->vertexData);
 	staging.destroy(&render->frameDeletionQueue);
@@ -224,13 +224,17 @@ void ChunkRenderer::render(VkCommandBuffer cmd)
 	auto* backbuffer = render->getBackbuffer();
 	auto colorAttachment = vk::Init::attachementInfo(
 		backbuffer->imageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+	VkClearValue clearValue{};
+	clearValue.depthStencil.depth = 1;
+	auto depthAttachment = vk::Init::attachementInfo(
+		render->depthBuffer.imageView, &clearValue, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
 	VkRenderingInfo renderInfo = {.sType = VK_STRUCTURE_TYPE_RENDERING_INFO};
 
 	renderInfo.renderArea = {{0, 0}, backbuffer->extent};
 	renderInfo.colorAttachmentCount = 1;
 	renderInfo.pColorAttachments = &colorAttachment;
-	renderInfo.pDepthAttachment = 0;
+	renderInfo.pDepthAttachment = &depthAttachment;
 	renderInfo.pStencilAttachment = 0;
 	renderInfo.layerCount = 1;
 	vkCmdBeginRendering(cmd, &renderInfo);

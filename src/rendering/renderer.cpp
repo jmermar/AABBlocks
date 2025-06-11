@@ -82,6 +82,7 @@ Renderer* Renderer::renderInstance = 0;
 void Renderer::destroySwapchain()
 {
 	backbuffer.destroy(&frameDeletionQueue);
+	depthBuffer.destroy(&frameDeletionQueue);
 	if(swapchain != VK_NULL_HANDLE)
 	{
 		vkDestroySwapchainKHR(device, swapchain, nullptr);
@@ -113,6 +114,8 @@ void Renderer::cleanup()
 
 void Renderer::renderLogic(CommandBuffer* cmd)
 {
+	depthBuffer.transition(
+		cmd->getCmd(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 	backbuffer.transition(cmd->getCmd(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 	backbuffer.clear(cmd->getCmd(), 0, 0, 0);
 	backbuffer.transition(
@@ -215,6 +218,7 @@ void Renderer::recreateSwapchain(int w, int h)
 	}
 
 	backbuffer.createTexture(device, vma, VkExtent2D{(unsigned int)w, (unsigned int)h}, 1);
+	depthBuffer.createTexture(device, vma, VkExtent2D{(unsigned int)w, (unsigned int)h}, 1);
 }
 
 void Renderer::renderFrame(RenderSate& state)
@@ -345,7 +349,7 @@ glm::mat4 Camera::getProjection()
 }
 glm::mat4 Camera::getView()
 {
-	return glm::lookAt(position, position + forward, glm::vec3(0.f, 1.f, 0.f));
+	return glm::lookAt(position, position + forward, glm::vec3(0.f, -1.f, 0.f));
 }
 } // namespace render
 } // namespace vblck

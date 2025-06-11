@@ -65,6 +65,53 @@ void Texture2D::createTexture(VkDevice device, VmaAllocator vma, VkExtent2D size
 	VKTRY(vkCreateSampler(device, &samplerInfo, nullptr, &sampler));
 }
 
+void DepthTexture::createTexture(VkDevice device,
+								 VmaAllocator vma,
+								 VkExtent2D size,
+								 size_t mipLevels)
+{
+	assert(!data.image && !this->mipLevels && !imageView);
+	this->mipLevels = mipLevels;
+	extent = size;
+	VkImageCreateInfo imageInfo = {};
+	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+	imageInfo.imageType = VK_IMAGE_TYPE_2D;
+	imageInfo.extent = {size.width, size.height, 1};
+	imageInfo.mipLevels = mipLevels;
+	imageInfo.arrayLayers = 1;
+	imageInfo.format = VK_FORMAT_D32_SFLOAT;
+	imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+	imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+					  VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+	imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+
+	VmaAllocationCreateInfo allocInfo = {};
+	allocInfo.usage = VMA_MEMORY_USAGE_AUTO;
+	allocInfo.requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+	VkImage image{};
+	VmaAllocation alloc{};
+	VKTRY(vmaCreateImage(vma, &imageInfo, &allocInfo, &image, &alloc, nullptr));
+
+	data.allocation = alloc;
+	data.image = image;
+
+	VkImageViewCreateInfo viewInfo = {};
+	viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	viewInfo.image = data.image;
+	viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+	viewInfo.format = VK_FORMAT_D32_SFLOAT;
+	viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+	viewInfo.subresourceRange.baseMipLevel = 0;
+	viewInfo.subresourceRange.levelCount = mipLevels;
+	viewInfo.subresourceRange.baseArrayLayer = 0;
+	viewInfo.subresourceRange.layerCount = 1;
+
+	VKTRY(vkCreateImageView(device, &viewInfo, nullptr, &imageView));
+}
+
 void Texture2DArray::createTexture(
 	VkDevice device, VmaAllocator vma, VkExtent2D size, uint32_t layers, size_t mipLevels)
 {

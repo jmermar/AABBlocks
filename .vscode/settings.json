@@ -71,6 +71,7 @@
         "cfenv": "cpp",
         "typeinfo": "cpp",
         "variant": "cpp",
-        "cmake.generator": "Unix Makefiles"
+        "cmake.generator": "Unix Makefiles",
+        "unordered_set": "cpp"
     }
 }
