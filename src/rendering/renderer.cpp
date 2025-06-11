@@ -42,7 +42,10 @@ void GlobalRenderData::create()
 
 	allocator.initPool(Renderer::get()->device, 8, ratios);
 
-	globalDescriptor = allocator.allocate(Renderer::get()->device, globalDescriptorLayout);
+	for(size_t i = 0; i < FRAME_OVERLAP; i++)
+	{
+		globalDescriptors[i] = allocator.allocate(Renderer::get()->device, globalDescriptorLayout);
+	}
 }
 
 void GlobalRenderData::destroy()
@@ -50,6 +53,11 @@ void GlobalRenderData::destroy()
 	globalBuffer.destroy();
 	vkDestroyDescriptorPool(Renderer::get()->device, allocator.pool, nullptr);
 	vkDestroyDescriptorSetLayout(Renderer::get()->device, globalDescriptorLayout, nullptr);
+}
+
+VkDescriptorSet GlobalRenderData::getGlobalDescriptor()
+{
+	return globalDescriptors[Renderer::get()->getFrameIndex()];
 }
 
 void GlobalRenderData::writeDescriptors(VkCommandBuffer cmd)
@@ -60,7 +68,7 @@ void GlobalRenderData::writeDescriptors(VkCommandBuffer cmd)
 	bufferInfo.range = globalBuffer.alignedSize;
 
 	VkWriteDescriptorSet write = {.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
-	write.dstSet = globalDescriptor;
+	write.dstSet = getGlobalDescriptor();
 	write.descriptorCount = 1;
 	write.dstBinding = 0;
 	write.dstArrayElement = 0;
@@ -94,6 +102,7 @@ void Renderer::destroySwapchain()
 void Renderer::cleanup()
 {
 	vkDeviceWaitIdle(device);
+	textureAtlas.destroy(&mainDeletionQueue);
 	worldRenderer = 0;
 	renderData.destroy();
 	destroySwapchain();
@@ -148,6 +157,19 @@ vk::Texture2D Renderer::loadTexture2D(const char* path)
 	vk::Texture2D tex;
 	tex.createTexture(device, vma, {image.w, image.h}, 4);
 	bufferWritter.writeBufferToImage(buffer.data.buffer, tex);
+	buffer.destroy(&frameDeletionQueue);
+	return tex;
+}
+
+vk::Texture2DArray Renderer::loadTexture2DArray(const char* path, int ncols, int nrows)
+{
+	auto image = readImageArrayFromFile(path, ncols, nrows);
+	vk::StagingBuffer buffer{};
+	buffer.create(device, vma, image.data.size());
+	buffer.write((std::span<uint8_t>)image.data);
+	vk::Texture2DArray tex;
+	tex.createTexture(device, vma, {image.w, image.h}, image.layers, 1);
+	bufferWritter.writeBufferToTexture2DArray(buffer.data.buffer, tex);
 	buffer.destroy(&frameDeletionQueue);
 	return tex;
 }

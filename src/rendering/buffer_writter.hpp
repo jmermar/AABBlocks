@@ -25,6 +25,12 @@ private:
 		uint32_t size;
 	};
 	std::vector<BufferToBuffer> writesBufferToBuffer;
+	struct BufferToTexture2DArray
+	{
+		VkBuffer buffer;
+		vk::Texture2DArray image;
+	};
+	std::vector<BufferToTexture2DArray> writesBufferToTexture2DArray;
 
 public:
 	inline void writeBufferToImage(VkBuffer buffer, const vk::Texture2D& image)
@@ -33,6 +39,14 @@ public:
 		command.buffer = buffer;
 		command.image = image;
 		writesBufferToTexture2D.push_back(command);
+	}
+
+	inline void writeBufferToTexture2DArray(VkBuffer buffer, const vk::Texture2DArray& texture)
+	{
+		BufferToTexture2DArray command;
+		command.buffer = buffer;
+		command.image = texture;
+		writesBufferToTexture2DArray.push_back(command);
 	}
 
 	inline void writeToSSBO(VkBuffer src, vk::SSBO* dst)

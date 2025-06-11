@@ -50,11 +50,12 @@ struct GlobalRenderData
 {
 	vk::DescriptorAllocator allocator{};
 	VkDescriptorSetLayout globalDescriptorLayout{};
-	VkDescriptorSet globalDescriptor{};
+	VkDescriptorSet globalDescriptors[FRAME_OVERLAP]{};
 	MappedBuffer globalBuffer{};
 
 	void create();
 	void destroy();
+	VkDescriptorSet getGlobalDescriptor();
 
 	void writeDescriptors(VkCommandBuffer cmd);
 };
@@ -90,6 +91,8 @@ struct Renderer
 	vk::Texture2D backbuffer;
 
 	std::unique_ptr<WorldRenderer> worldRenderer;
+
+	vk::Texture2DArray textureAtlas{};
 
 	void initVMA();
 	void initCommands();
@@ -134,6 +137,7 @@ struct Renderer
 		frameNumber = 0;
 		vkGetPhysicalDeviceProperties(chosenGPU, &props);
 		initVMA();
+		textureAtlas = loadTexture2DArray("res/textures/atlas.png", 16, 16);
 		recreateSwapchain(w, h);
 		initCommands();
 		initSyncStructures();
@@ -164,6 +168,7 @@ struct Renderer
 	};
 
 	vk::Texture2D loadTexture2D(const char* path);
+	vk::Texture2DArray loadTexture2DArray(const char* path, int ncols, int nrows);
 
 	vk::Texture2D* getBackbuffer()
 	{

@@ -25,6 +25,13 @@ void vblck::render::BufferWritter::performWrites(VkCommandBuffer cmd)
 	}
 	writesBufferToTexture2D.clear();
 
+	for(auto& [buffer, image] : writesBufferToTexture2DArray)
+	{
+		image.transition(cmd, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+		image.copyFromBuffer(cmd, buffer);
+	}
+	writesBufferToTexture2DArray.clear();
+
 	for(auto& [src, dst, size] : writesBufferToBuffer)
 	{
 		vk::copyBufferToBuffer(cmd, src, dst, size, 0, 0);

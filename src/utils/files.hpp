@@ -11,7 +11,14 @@ struct ImageData
 	std::vector<uint8_t> data;
 };
 
+struct ImageArrayData
+{
+	uint32_t w, h, layers;
+	std::vector<uint8_t> data;
+};
+
 ImageData readImageFromFile(const std::string& path);
+ImageArrayData readImageArrayFromFile(const std::string& path, uint32_t ncols, uint32_t nrows);
 
 std::vector<uint8_t> loadBinaryFile(const std::string& path);
 }; // namespace vblck

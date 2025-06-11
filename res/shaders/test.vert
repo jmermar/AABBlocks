@@ -1,24 +1,46 @@
 #version 450
+#extension GL_EXT_buffer_reference : require
 
-layout (location = 0) out vec3 outColor;
+layout (location=0) out vec3 outUv;
+
+struct ChunkFace {
+	vec3 position;
+	uint face;
+	uint textureId;
+};
+
+struct Vertex {
+	vec3 pos;
+	vec2 uv;
+};
+
+layout(std430, buffer_reference, buffer_reference_align = 8) readonly buffer FacesAddr {
+	ChunkFace faces[];
+};
+
+layout(set = 0, binding = 0) readonly uniform CameraData {
+    mat4 proj;
+    mat4 view;
+    mat4 projView;
+} ubo;
+
+layout(std430, set=1, binding = 1) readonly buffer VertexBuffer {
+    Vertex vertices[];
+};
+
+layout(push_constant) uniform PushConstants {
+    FacesAddr faces;
+	vec3 position;
+} pc;
 
 void main() 
 {
-	//const array of positions for the triangle
-	const vec3 positions[3] = vec3[3](
-		vec3(1.f,1.f, 0.0f),
-		vec3(-1.f,1.f, 0.0f),
-		vec3(0.f,-1.f, 0.0f)
-	);
+	uint idx = gl_VertexIndex;
+	uint fineIdx = idx % 6;
+    // Interpretar el address como un puntero a un array de VertexBuffer
+    ChunkFace face = pc.faces.faces[idx / 6];
+	Vertex vertex = vertices[face.face * 6 + fineIdx];
 
-	//const array of colors for the triangle
-	const vec3 colors[3] = vec3[3](
-		vec3(1.0f, 0.0f, 0.0f), //red
-		vec3(0.0f, 1.0f, 0.0f), //green
-		vec3(00.f, 0.0f, 1.0f)  //blue
-	);
-
-	//output the position of each vertex
-	gl_Position = vec4(positions[gl_VertexIndex], 1.0f);
-	outColor = colors[gl_VertexIndex];
+	gl_Position = ubo.projView * vec4((pc.position + vertex.pos), 1);
+	outUv = vec3(vertex.uv, face.textureId);
 }

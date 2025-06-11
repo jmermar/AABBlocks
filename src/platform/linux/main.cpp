@@ -39,9 +39,10 @@ int main(int argc, char** argv)
 	auto ticks = SDL_GetTicks();
 
 	render::RenderSate renderState{};
-	renderState.camera.position = glm::vec3(0, 1, -1);
-	renderState.camera.forward = glm::vec3(0, -1, 1);
+	renderState.camera.position = glm::vec3(-5, 5, -5);
+	renderState.camera.forward = glm::vec3(5, -5, 5);
 	uint64_t frameDelta = 0;
+	float acc = 0;
 	while(running)
 	{
 		SDL_Event e;
@@ -59,6 +60,12 @@ int main(int argc, char** argv)
 			}
 			ImGui_ImplSDL3_ProcessEvent(&e);
 		}
+		acc += frameDelta / 1000.f;
+
+		renderState.camera.position.x = glm::cos(acc) * 5;
+		renderState.camera.position.z = glm::sin(acc) * 5;
+		renderState.camera.position.y = 0;
+		renderState.camera.forward = -renderState.camera.position;
 
 		ImGui_ImplVulkan_NewFrame();
 		ImGui_ImplSDL3_NewFrame();

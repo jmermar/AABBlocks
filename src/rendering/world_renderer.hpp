@@ -1,6 +1,8 @@
 #pragma once
+#include "chunk_renderer.hpp"
+#include "vk/descriptors.hpp"
+#include "vk/textures.hpp"
 #include "vk/types.hpp"
-
 namespace vblck
 {
 namespace render
@@ -10,24 +12,23 @@ class WorldRenderer
 private:
 	VkDevice device{};
 	VmaAllocator vma{};
-	VkPipeline pipeline{};
-	VkPipelineLayout pipelineLayout{};
+	vk::DescriptorAllocator descriptorAllocator;
+	ChunkRenderer chunkRenderer;
 
-	void initPipelineLayout();
-	void initPipeline();
-	void destroy();
+	void initDescriptorPool();
+	void create();
 
 public:
 	WorldRenderer(VkDevice device, VmaAllocator vma)
 		: device(device)
 		, vma(vma)
 	{
-		initPipelineLayout();
-		initPipeline();
+		create();
 	}
 	~WorldRenderer()
 	{
-		destroy();
+		chunkRenderer.destroy();
+		vkDestroyDescriptorPool(device, descriptorAllocator.pool, nullptr);
 	}
 
 	void render(VkCommandBuffer cmd);
