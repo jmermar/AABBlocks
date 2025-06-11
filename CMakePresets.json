@@ -1,18 +1,27 @@
 {
-  "version": 3,
-  "cmakeMinimumRequired": {
-    "major": 3,
-    "minor": 19
-  },
-  "configurePresets": [
-    {
-      "name": "make",
-      "displayName": "Make (Release)",
-      "generator": "Unix Makefiles",
-      "binaryDir": "${sourceDir}/build",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release"
-      }
-    }
-  ]
+    "version": 3,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 19
+    },
+    "configurePresets": [
+        {
+            "name": "make",
+            "displayName": "Make (Release)",
+            "generator": "Unix Makefiles",
+            "binaryDir": "${sourceDir}/build",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        },
+        {
+            "name": "make debug",
+            "displayName": "Make (Debug)",
+            "generator": "Unix Makefiles",
+            "binaryDir": "${sourceDir}/build",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        }
+    ]
 }

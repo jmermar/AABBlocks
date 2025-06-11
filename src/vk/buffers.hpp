@@ -15,6 +15,11 @@ void copyBufferToBuffer(VkCommandBuffer cmd,
 						uint32_t srcOffset,
 						uint32_t dstOffset);
 
+inline VkDeviceSize align(VkDeviceSize value, VkDeviceSize alignment)
+{
+	return (value + alignment - 1) & ~(alignment - 1);
+}
+
 struct StagingBuffer
 {
 	Buffer data{};
@@ -32,11 +37,11 @@ struct StagingBuffer
 		mappedData = 0;
 	}
 	template <typename T>
-	void write(const std::span<T> data)
+	void write(const std::span<T> writeData)
 	{
 		assert(mappedData && data.buffer && data.allocation);
-		assert(sizeof(T) * data.size() <= size);
-		std::memcpy(mappedData, data.data(), data.size() * sizeof(T));
+		assert(sizeof(T) * writeData.size() <= size);
+		std::memcpy(mappedData, writeData.data(), writeData.size() * sizeof(T));
 	}
 };
 
@@ -56,5 +61,6 @@ struct SSBO
 		size = 0;
 	}
 };
+
 } // namespace vk
 } // namespace vblck

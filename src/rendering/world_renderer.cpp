@@ -19,7 +19,10 @@ void WorldRenderer::initPipelineLayout()
 {
 	VkPipelineLayoutCreateInfo layoutInfo{.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
 
-	layoutInfo.setLayoutCount = 0;
+	auto globalDescriptorSetLayout = Renderer::get()->renderData.globalDescriptorLayout;
+
+	layoutInfo.setLayoutCount = 1;
+	layoutInfo.pSetLayouts = &globalDescriptorSetLayout;
 	layoutInfo.pushConstantRangeCount = 0;
 
 	VKTRY(vkCreatePipelineLayout(device, &layoutInfo, nullptr, &pipelineLayout));
@@ -84,6 +87,15 @@ void WorldRenderer::render(VkCommandBuffer cmd)
 	renderInfo.pStencilAttachment = 0;
 	renderInfo.layerCount = 1;
 	vkCmdBeginRendering(cmd, &renderInfo);
+
+	vkCmdBindDescriptorSets(cmd,
+							(VkPipelineBindPoint)0,
+							pipelineLayout,
+							0,
+							1,
+							&Renderer::get()->renderData.globalDescriptor,
+							0,
+							0);
 
 	vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 

@@ -37,6 +37,10 @@ int main(int argc, char** argv)
 
 	bool running = true;
 	auto ticks = SDL_GetTicks();
+
+	render::RenderSate renderState{};
+	renderState.camera.position = glm::vec3(0, 1, -1);
+	renderState.camera.forward = glm::vec3(0, -1, 1);
 	uint64_t frameDelta = 0;
 	while(running)
 	{
@@ -64,7 +68,7 @@ int main(int argc, char** argv)
 
 		ImGui::Render();
 
-		renderer->renderFrame();
+		renderer->renderFrame(renderState);
 
 		frameDelta = SDL_GetTicks() - ticks;
 		ticks = SDL_GetTicks();

@@ -2,18 +2,73 @@
 #include "utils/files.hpp"
 #include "utils/logger.hpp"
 #include "vk/buffers.hpp"
+#include "vk/descriptors.hpp"
 #include "vk/init.hpp"
 #include "vk/one_time_commands.hpp"
 #include "vk/textures.hpp"
-#include <SDL3/SDL_vulkan.h>
 #include <VkBootstrap.h>
 #include <backends/imgui_impl_vulkan.h>
+#include <glm/gtc/matrix_transform.hpp>
 #include <imgui.h>
 constexpr bool bUseValidationLayers = true;
 namespace vblck
 {
 namespace render
 {
+
+struct UniformGlobalData
+{
+	glm::mat4 projMatrix;
+	glm::mat4 viewMatrix;
+	glm::mat4 projViewMatrix;
+};
+
+void GlobalRenderData::create()
+{
+	vk::DescriptorLayoutBuilder layoutBuilder;
+	layoutBuilder.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+	globalDescriptorLayout =
+		layoutBuilder.build(Renderer::get()->device, VK_SHADER_STAGE_ALL_GRAPHICS);
+
+	globalBuffer.create(sizeof(UniformGlobalData));
+	std::vector<vk::DescriptorAllocator::PoolSizeRatio> ratios;
+	ratios.resize(3);
+	ratios[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	ratios[0].ratio = 1;
+	ratios[1].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+	ratios[1].ratio = 1;
+	ratios[2].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	ratios[2].ratio = 1;
+
+	allocator.initPool(Renderer::get()->device, 8, ratios);
+
+	globalDescriptor = allocator.allocate(Renderer::get()->device, globalDescriptorLayout);
+}
+
+void GlobalRenderData::destroy()
+{
+	globalBuffer.destroy();
+	vkDestroyDescriptorPool(Renderer::get()->device, allocator.pool, nullptr);
+	vkDestroyDescriptorSetLayout(Renderer::get()->device, globalDescriptorLayout, nullptr);
+}
+
+void GlobalRenderData::writeDescriptors(VkCommandBuffer cmd)
+{
+	VkDescriptorBufferInfo bufferInfo{};
+	bufferInfo.buffer = globalBuffer.buffer.buffer;
+	bufferInfo.offset = globalBuffer.getBaseAddr(Renderer::get()->getFrameIndex());
+	bufferInfo.range = globalBuffer.alignedSize;
+
+	VkWriteDescriptorSet write = {.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+	write.dstSet = globalDescriptor;
+	write.descriptorCount = 1;
+	write.dstBinding = 0;
+	write.dstArrayElement = 0;
+	write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	write.pBufferInfo = &bufferInfo;
+
+	vkUpdateDescriptorSets(Renderer::get()->device, 1, &write, 0, 0);
+}
 
 Renderer* Renderer::renderInstance = 0;
 void Renderer::destroySwapchain()
@@ -40,6 +95,7 @@ void Renderer::cleanup()
 {
 	vkDeviceWaitIdle(device);
 	worldRenderer = 0;
+	renderData.destroy();
 	destroySwapchain();
 	deletePendingObjects();
 	mainDeletionQueue.deleteQueue(device, vma);
@@ -139,7 +195,7 @@ void Renderer::recreateSwapchain(int w, int h)
 	backbuffer.createTexture(device, vma, VkExtent2D{(unsigned int)w, (unsigned int)h}, 1);
 }
 
-void Renderer::renderFrame()
+void Renderer::renderFrame(RenderSate& state)
 {
 	vkWaitForFences(device, 1, &getCurrentFrame().renderFence, true, 1000000000);
 	vkResetFences(device, 1, &getCurrentFrame().renderFence);
@@ -165,7 +221,14 @@ void Renderer::renderFrame()
 
 	auto* cmd = getCurrentFrame().mainCommandBuffer.get();
 
+	auto* uniformGlobalData = (UniformGlobalData*)renderData.globalBuffer.getData();
+	uniformGlobalData->viewMatrix = state.camera.getView();
+	uniformGlobalData->projMatrix = state.camera.getProjection();
+	uniformGlobalData->projViewMatrix =
+		uniformGlobalData->projMatrix * uniformGlobalData->viewMatrix;
+
 	cmd->begin();
+	renderData.writeDescriptors(cmd->getCmd());
 
 	bufferWritter.performWrites(cmd->getCmd());
 
@@ -253,6 +316,14 @@ void Renderer::initSyncStructures()
 		mainDeletionQueue.fences.push_back(frames[i].renderFence);
 		mainDeletionQueue.semaphores.push_back(frames[i].swapchainSemaphore);
 	}
+}
+glm::mat4 Camera::getProjection()
+{
+	return glm::perspectiveFov(fov, aspect, 1.f, znear, zfar);
+}
+glm::mat4 Camera::getView()
+{
+	return glm::lookAt(position, position + forward, glm::vec3(0.f, 1.f, 0.f));
 }
 } // namespace render
 } // namespace vblck
