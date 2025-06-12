@@ -25,6 +25,8 @@ target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 
 
 find_package(Vulkan REQUIRED)
+find_package(OpenMP REQUIRED)
+find_package(Threads REQUIRED)
 
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE
     ${Vulkan_LIBRARIES}
@@ -35,6 +37,8 @@ target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE
     vk-bootstrap::vk-bootstrap
     stb_image
     imgui
+    OpenMP::OpenMP_CXX
+    Threads::Threads
 )
 
 target_include_directories(${CMAKE_PROJECT_NAME}

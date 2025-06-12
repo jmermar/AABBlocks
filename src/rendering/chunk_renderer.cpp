@@ -216,6 +216,16 @@ void ChunkRenderer::deleteChunk(ChunkData* chunk)
 	}
 }
 
+void ChunkRenderer::clearData()
+{
+	for(auto* chunk : chunks)
+	{
+		chunk->vertexData.destroy(&Renderer::get()->frameDeletionQueue);
+		delete chunk;
+	}
+	chunks.clear();
+}
+
 void ChunkRenderer::render(VkCommandBuffer cmd)
 {
 	auto render = Renderer::get();

@@ -1,13 +1,14 @@
 #pragma once
 #include "chunk_data.hpp"
+#include <atomic>
+#include <chrono>
 #include <memory>
+#include <thread>
 #include <unordered_map>
 namespace vblck
 {
 namespace world
 {
-constexpr uint32_t WORLD_SIZE = 16;
-constexpr uint32_t WORLD_HEIGHT = 16;
 
 struct Player
 {
@@ -58,35 +59,47 @@ struct BlockDatabase
 
 struct World
 {
+	uint32_t worldSize{}, worldHeight{};
 	BlockDatabase blockDatabase;
-	std::array<std::array<std::array<Chunk, WORLD_SIZE>, WORLD_HEIGHT>, WORLD_SIZE> chunks;
+	std::vector<Chunk> chunks;
 
 	Player player;
 
 	std::vector<ChunkGenerateCommand> chunkGenerateCommands;
 
-	inline const BlockData* getBlock(int32_t x, int32_t y, int32_t z)
+	std::atomic<bool> loaded;
+	std::atomic<float> progress;
+
+	inline Chunk* chunkAt(int32_t cx, int32_t cy, int32_t cz)
 	{
-		if(x < 0 || y < 0 || z < 0)
+		if(cx < 0 || cy < 0 || cz < 0)
 			return 0;
-		if(x >= (int32_t)(WORLD_SIZE * CHUNK_SIZE) || z >= (int32_t)(WORLD_SIZE * CHUNK_SIZE) ||
-		   y >= (int32_t)(WORLD_HEIGHT * CHUNK_SIZE))
+		if(cx >= (int32_t)(worldSize) || cz >= (int32_t)(worldSize) || cy >= (int32_t)(worldHeight))
 			return 0;
 
-		auto cx = x / CHUNK_SIZE;
-		auto cy = y / CHUNK_SIZE;
-		auto cz = z / CHUNK_SIZE;
+		return &chunks[cz * worldSize * worldHeight + cy * worldSize + cx];
+	}
+
+	inline const BlockData* getBlock(int32_t x, int32_t y, int32_t z)
+	{
+		auto* chunk = chunkAt(x / CHUNK_SIZE, y / CHUNK_SIZE, z / CHUNK_SIZE);
+		if(!chunk)
+			return 0;
 
 		x %= CHUNK_SIZE;
 		y %= CHUNK_SIZE;
 		z %= CHUNK_SIZE;
 
-		return blockDatabase.getBlockFromId(chunks[cz][cy][cx].blocks[z][y][x]);
+		return blockDatabase.getBlockFromId(chunk->blocks[z][y][x]);
 	}
 
-	void create();
+	void generateChunkMeshes();
+
+	void create(uint32_t worldSize, uint32_t worldHeight);
 
 	void update(float deltaTime);
+
+	bool drawGui();
 
 	static World* get()
 	{
@@ -96,7 +109,6 @@ struct World
 
 private:
 	void updatePlayer(float deltaTime);
-	void generateWorld();
 };
 } // namespace world
 } // namespace vblck

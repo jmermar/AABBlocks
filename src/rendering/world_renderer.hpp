@@ -29,6 +29,11 @@ struct WorldRenderer
 		vkDestroyDescriptorPool(device, descriptorAllocator.pool, nullptr);
 	}
 
+	void clearWorld()
+	{
+		chunkRenderer.clearData();
+	}
+
 	void render(VkCommandBuffer cmd);
 };
 } // namespace render

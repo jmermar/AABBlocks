@@ -199,7 +199,7 @@ void Renderer::recreateSwapchain(int w, int h)
 		swapchainBuilder
 			.set_desired_format(VkSurfaceFormatKHR{.format = swapchainImageFormat,
 												   .colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR})
-			.set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR)
+			.set_desired_present_mode(VK_PRESENT_MODE_IMMEDIATE_KHR)
 			.set_desired_extent(w, h)
 			.add_image_usage_flags(VK_IMAGE_USAGE_TRANSFER_DST_BIT)
 			.build()

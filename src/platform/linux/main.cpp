@@ -43,6 +43,42 @@ std::shared_ptr<spdlog::logger>& getLogger()
 }
 } // namespace vblck
 
+bool mainMenuUpdateGUI(float frameDelta)
+{
+	auto* world = world::World::get();
+
+	if(ImGui::Button("Gen 8x8 world"))
+	{
+		world->create(8, 16);
+		return true;
+	}
+
+	if(ImGui::Button("Gen 16x16 world"))
+	{
+		world->create(16, 16);
+		return true;
+	}
+
+	if(ImGui::Button("Gen 32x32 world"))
+	{
+		world->create(32, 16);
+		return true;
+	}
+
+	if(ImGui::Button("Gen 64x64 world"))
+	{
+		world->create(64, 16);
+		return true;
+	}
+	return false;
+}
+
+enum SceneState
+{
+	SCENE_STATE_MAINMENU,
+	SCENE_STATE_WORLD
+};
+
 int main(int argc, char** argv)
 {
 	logger = spdlog::stdout_color_mt("VKP");
@@ -53,7 +89,7 @@ int main(int argc, char** argv)
 
 	// Init world
 	auto* world = world::World::get();
-	world->create();
+	world->create(8, 16);
 
 	System system{};
 
@@ -83,13 +119,8 @@ int main(int argc, char** argv)
 	uint64_t frameDelta = 0;
 	float deltaTime = 0;
 
-	world->create();
+	SceneState sceneState = SCENE_STATE_MAINMENU;
 
-	for(auto& cmd : world->chunkGenerateCommands)
-	{
-		renderer->worldRenderer->chunkRenderer.loadChunk(cmd.position, cmd.data);
-	}
-	world->chunkGenerateCommands.clear();
 	bool prevCaptureMouse = inputData->captureMouse;
 	while(running)
 	{
@@ -155,13 +186,32 @@ int main(int argc, char** argv)
 
 		ImGui_ImplVulkan_NewFrame();
 		ImGui_ImplSDL3_NewFrame();
-		ImGui::NewFrame();
 
+		ImGui::NewFrame();
 		ImGui::Text("FPS: %f", 1000.f / frameDelta);
+
+		if(sceneState == SCENE_STATE_MAINMENU)
+		{
+			if(mainMenuUpdateGUI(frameDelta))
+			{
+				sceneState = SCENE_STATE_WORLD;
+			}
+		}
+		else if(sceneState == SCENE_STATE_WORLD)
+		{
+			if(world->drawGui())
+			{
+				sceneState = SCENE_STATE_MAINMENU;
+				renderer->worldRenderer->clearWorld();
+			}
+		}
 
 		ImGui::Render();
 
-		world->update(deltaTime);
+		if(sceneState == SCENE_STATE_WORLD)
+		{
+			world->update(deltaTime);
+		}
 
 		renderState.camera.position = world->player.position;
 		renderState.camera.forward = world->player.forward;

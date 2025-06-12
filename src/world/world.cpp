@@ -1,10 +1,14 @@
 #include "world.hpp"
 #include "FastNoiseLite.h"
 #include "input.hpp"
+#include "rendering/renderer.hpp"
+#include "world_generator.hpp"
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/matrix.hpp>
+#include <imgui.h>
+#include <omp.h>
 namespace vblck
 {
 namespace world
@@ -12,53 +16,113 @@ namespace world
 
 constexpr uint32_t SAND_LEVEL = 30;
 
-float fractalNoise(FastNoiseLite& noiseGen, float x, float z, size_t nOctaves, float decay)
+void generateWorldThread()
 {
-	float noise = 0;
-	float amp = 1;
-	float freq = 1;
-	float acc = 0;
-	for(size_t i = 0; i < nOctaves; i++)
-	{
-		acc += amp;
-		noise += noiseGen.GetNoise(x * freq, z * freq) * amp;
-		freq *= 2;
-		amp /= decay;
-	}
+	auto* world = World::get();
+	world->chunks.resize(world->worldSize * world->worldSize * world->worldHeight);
 
-	return noise / acc;
-}
-void World::create()
-{
-	blockDatabase.loadDatabase("res/BlockData.csv");
-	generateWorld();
-	for(uint32_t cz = 0; cz < WORLD_SIZE; cz++)
+	WorldGenerator generator;
+	generator.baseAmplitude = 8;
+	generator.baseHeight = 30;
+	generator.sandLevel = 20;
+	generator.world_height = world->worldHeight;
+	generator.world_size = world->worldSize;
+	generator.generateWorld();
+	std::atomic<uint32_t> nChunks = 0;
+
+	int numThreads = omp_get_max_threads();
+	std::vector<std::vector<ChunkGenerateCommand>> localVectors(numThreads);
+
+#pragma omp parallel for
+	for(uint32_t cz = 0; cz < world->worldSize; cz++)
 	{
-		for(uint32_t cy = 0; cy < WORLD_HEIGHT; cy++)
+		for(uint32_t cx = 0; cx < world->worldSize; cx++)
 		{
-			for(uint32_t cx = 0; cx < WORLD_SIZE; cx++)
+			int tid = omp_get_thread_num();
+			std::vector<ChunkGenerateCommand>& local = localVectors[tid];
+			for(uint32_t cy = 0; cy < world->worldHeight; cy++)
 			{
-				auto& chunk = chunks[cz][cy][cx];
-				chunk.position = glm::vec3(cx, cy, cz) * (float)CHUNK_SIZE;
+
+				auto* chunk = world->chunkAt(cx, cy, cz);
+				chunk->position = glm::vec3(cx, cy, cz) * (float)CHUNK_SIZE;
 				ChunkGenerateCommand genCmd{};
-				genCmd.data = chunk.generateChunkData();
+				genCmd.data = chunk->generateChunkData();
 				if(genCmd.data.size() > 0)
 				{
-					genCmd.position = chunk.position;
-					chunkGenerateCommands.push_back(genCmd);
+					genCmd.position = chunk->position;
+					local.push_back(genCmd);
 				}
+				nChunks++;
+				world->progress =
+					(nChunks / (float)(world->worldHeight * world->worldSize * world->worldSize)) *
+						0.5f +
+					0.5f;
 			}
 		}
 	}
+	for(auto& local : localVectors)
+	{
+		world->chunkGenerateCommands.insert(
+			world->chunkGenerateCommands.end(), local.begin(), local.end());
+	}
+
+	world->loaded = true;
+}
+
+void World::generateChunkMeshes()
+{
+	auto* renderer = render::Renderer::get();
+	for(auto& cmd : chunkGenerateCommands)
+	{
+		renderer->worldRenderer->chunkRenderer.loadChunk(cmd.position, cmd.data);
+	}
+	chunkGenerateCommands.clear();
+}
+
+void World::create(uint32_t worldSize, uint32_t worldHeight)
+{
+	blockDatabase.loadDatabase("res/BlockData.csv");
+	this->worldHeight = worldHeight;
+	this->worldSize = worldSize;
+
 	player.init();
+	loaded = false;
+	progress = 0;
+
+	std::thread loadThread(generateWorldThread);
+	loadThread.detach();
 }
 void World::update(float deltaTime)
 {
+	if(!loaded)
+	{
+		return;
+	}
+	updatePlayer(deltaTime);
+}
+bool World::drawGui()
+{
+	if(!loaded)
+	{
+		ImGui::Text("Loading world");
+		ImGui::Text("Progress: %.2f", progress * 100.f);
+		return false;
+	}
+	generateChunkMeshes();
 	if(InputData::isPressed(INPUT_MENU))
 	{
 		InputData::setCaptureMosue(!InputData::getCaptureMosue());
 	}
-	updatePlayer(deltaTime);
+
+	if(!InputData::getCaptureMosue())
+	{
+		if(ImGui::Button("Return to title"))
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 void World::updatePlayer(float deltaTime)
 {
@@ -83,63 +147,10 @@ void World::updatePlayer(float deltaTime)
 	player.rotateY(InputData::getAxis().x);
 	player.rotateX(-InputData::getAxis().y);
 }
-void World::generateWorld()
-{
-	FastNoiseLite noise;
-	noise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
-	for(uint32_t cz = 0; cz < WORLD_SIZE; cz++)
-	{
-		for(uint32_t cy = 0; cy < WORLD_HEIGHT; cy++)
-		{
-			for(uint32_t cx = 0; cx < WORLD_SIZE; cx++)
-			{
-				auto& chunk = chunks[cz][cy][cx];
-				for(uint32_t z = 0; z < CHUNK_SIZE; z++)
-				{
-					for(uint32_t x = 0; x < CHUNK_SIZE; x++)
-					{
-						float wx = cx * CHUNK_SIZE + x;
-						float wz = cz * CHUNK_SIZE + z;
-						float n = fractalNoise(noise, wx * 0.5f, wz * 0.5f, 12, 1.8f);
-						uint32_t h = 30 + n * 15;
-						for(uint32_t y = 0; y < CHUNK_SIZE; y++)
-						{
-							auto wy = cy * CHUNK_SIZE + y;
-							uint32_t block = 0;
 
-							if(wy <= h)
-							{
-								if(wy == h)
-								{
-									if(h <= SAND_LEVEL)
-										block = blockDatabase.getBlockId("Sand");
-									else
-										block = blockDatabase.getBlockId("Grass");
-								}
-								else if(h - wy <= 2)
-								{
-									if(h <= SAND_LEVEL)
-										block = blockDatabase.getBlockId("Sand");
-									else
-										block = blockDatabase.getBlockId("Dirt");
-								}
-								else
-								{
-									block = blockDatabase.getBlockId("Stone");
-								}
-							}
-
-							chunk.blocks[z][y][x] = block;
-						}
-					}
-				}
-			}
-		}
-	}
-}
 void Player::init()
 {
-	position = glm::vec3(1, 0, 1) * (float)(WORLD_SIZE * 0.5f * CHUNK_SIZE);
+	position = glm::vec3(1, 0, 1) * (float)(World::get()->worldSize * 0.5f * CHUNK_SIZE);
 	position.y = 50;
 	forward = glm::vec3(0, 0, 1);
 	moveSpeed = 8;

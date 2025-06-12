@@ -38,6 +38,8 @@ struct ChunkRenderer
 	ChunkData* loadChunk(glm::vec3 position, std::span<ChunkFaceData> data);
 	void deleteChunk(ChunkData* chunk);
 
+	void clearData();
+
 	void create(vk::DescriptorAllocator* allocator)
 	{
 		createBuffers();
