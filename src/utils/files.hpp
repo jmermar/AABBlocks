@@ -1,5 +1,6 @@
 #pragma once
 
+#include "types.hpp"
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -21,4 +22,6 @@ ImageData readImageFromFile(const std::string& path);
 ImageArrayData readImageArrayFromFile(const std::string& path, uint32_t ncols, uint32_t nrows);
 
 std::vector<uint8_t> loadBinaryFile(const std::string& path);
+
+std::vector<BlockData> loadBlockData(const std::string& path);
 }; // namespace vblck

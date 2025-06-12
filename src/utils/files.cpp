@@ -3,6 +3,7 @@
 #include "logger.hpp"
 #include "stb_image/stb_image.h"
 
+#include "types.hpp"
 #include <cstdint>
 #include <fstream>
 #include <iostream>
@@ -30,6 +31,42 @@ ImageData readImageFromFile(const std::string& path)
 	stbi_image_free(data);
 
 	return img;
+}
+std::vector<BlockData> loadBlockData(const std::string& path)
+{
+	std::ifstream file(path);
+	TRY(file.is_open());
+
+	std::string line;
+	std::getline(file, line);
+
+	std::vector<BlockData> data;
+
+	while(std::getline(file, line))
+	{
+		std::stringstream ss(line);
+		std::string celda;
+		std::vector<std::string> columns;
+
+		while(std::getline(ss, celda, ','))
+		{
+			columns.push_back(celda);
+		}
+
+		TRY(columns.size() >= 8);
+
+		BlockData block;
+		block.name = columns[0];
+		block.solid = std::stoi(columns[1]);
+		block.faces[CHUNK_FACES_FRONT] = std::stoi(columns[2]);
+		block.faces[CHUNK_FACES_BACK] = std::stoi(columns[3]);
+		block.faces[CHUNK_FACES_LEFT] = std::stoi(columns[4]);
+		block.faces[CHUNK_FACES_RIGHT] = std::stoi(columns[5]);
+		block.faces[CHUNK_FACES_TOP] = std::stoi(columns[6]);
+		block.faces[CHUNK_FACES_BOTTOM] = std::stoi(columns[7]);
+		data.push_back(block);
+	}
+	return data;
 }
 ImageArrayData readImageArrayFromFile(const std::string& path, uint32_t ncols, uint32_t nrows)
 {

@@ -53,7 +53,7 @@ int main(int argc, char** argv)
 
 	// Init world
 	auto* world = world::World::get();
-	world->generateWorld();
+	world->create();
 
 	System system{};
 
@@ -83,7 +83,7 @@ int main(int argc, char** argv)
 	uint64_t frameDelta = 0;
 	float deltaTime = 0;
 
-	world->generateWorld();
+	world->create();
 
 	for(auto& cmd : world->chunkGenerateCommands)
 	{

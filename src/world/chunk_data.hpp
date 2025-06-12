@@ -1,3 +1,4 @@
+#pragma once
 #include "types.hpp"
 #include "utils/files.hpp"
 #include <array>
@@ -13,6 +14,12 @@ struct Chunk
 	std::array<std::array<std::array<uint32_t, CHUNK_SIZE>, CHUNK_SIZE>, CHUNK_SIZE> blocks;
 
 	std::vector<ChunkFaceData> generateChunkData();
+	const BlockData* getBlock(int32_t x, int32_t y, int32_t z);
+	inline bool isSolid(int32_t x, int32_t y, int32_t z)
+	{
+		auto* bd = getBlock(x, y, z);
+		return !(!bd || !bd->solid);
+	}
 };
 } // namespace world
 } // namespace vblck

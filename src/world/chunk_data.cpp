@@ -1,5 +1,5 @@
 #include "chunk_data.hpp"
-
+#include "world.hpp"
 namespace vblck
 {
 namespace world
@@ -13,54 +13,65 @@ std::vector<ChunkFaceData> Chunk::generateChunkData()
 		{
 			for(uint32_t x = 0; x < CHUNK_SIZE; x++)
 			{
-				bool isChunk = blocks[z][y][x] != 0;
+				auto* block = getBlock(x, y, z);
+				if(!block || !block->solid)
+					continue;
 				ChunkFaceData face;
 				face.position = glm::vec3(x, y, z);
-				if(isChunk && ((x == 0) || !blocks[z][y][x - 1]))
+				if(!isSolid(x - 1, y, z))
 				{
-					face.face = 3;
-					face.textureId = 49;
+					face.face = CHUNK_FACES_LEFT;
+					face.textureId = block->faces[CHUNK_FACES_LEFT];
 					ret.push_back(face);
 				}
 
-				if(isChunk && ((x == CHUNK_SIZE - 1) || !blocks[z][y][x + 1]))
+				if(!isSolid(x + 1, y, z))
 				{
-					face.face = 2;
-					face.textureId = 49;
+					face.face = CHUNK_FACES_RIGHT;
+					face.textureId = block->faces[CHUNK_FACES_RIGHT];
 					ret.push_back(face);
 				}
 
-				if(isChunk && ((z == 0) || !blocks[z - 1][y][x]))
+				if(!isSolid(x, y, z - 1))
 				{
-					face.face = 1;
-					face.textureId = 49;
+					face.face = CHUNK_FACES_BACK;
+					face.textureId = block->faces[CHUNK_FACES_BACK];
 					ret.push_back(face);
 				}
 
-				if(isChunk && ((z == CHUNK_SIZE - 1) || !blocks[z + 1][y][x]))
+				if(!isSolid(x, y, z + 1))
 				{
-					face.face = 0;
-					face.textureId = 49;
+					face.face = CHUNK_FACES_FRONT;
+					face.textureId = block->faces[CHUNK_FACES_FRONT];
 					ret.push_back(face);
 				}
 
-				if(isChunk && ((y == 0) || !blocks[z][y - 1][x]))
+				if(!isSolid(x, y + 1, z))
 				{
-					face.face = 5;
-					face.textureId = 0;
+					face.face = CHUNK_FACES_TOP;
+					face.textureId = block->faces[CHUNK_FACES_TOP];
 					ret.push_back(face);
 				}
 
-				if(isChunk && ((y == CHUNK_SIZE - 1) || !blocks[z][y + 1][x]))
+				if(!isSolid(x, y - 1, z))
 				{
-					face.face = 4;
-					face.textureId = 48;
+					face.face = CHUNK_FACES_BOTTOM;
+					face.textureId = block->faces[CHUNK_FACES_BOTTOM];
 					ret.push_back(face);
 				}
 			}
 		}
 	}
 	return ret;
+}
+const BlockData* Chunk::getBlock(int32_t x, int32_t y, int32_t z)
+{
+	auto* world = World::get();
+	if(x < 0 || y < 0 || z < 0)
+		return 0;
+	if(x >= (int32_t)CHUNK_SIZE || y >= (int32_t)CHUNK_SIZE || z >= (int32_t)CHUNK_SIZE)
+		return 0;
+	return world->blockDatabase.getBlockFromId(blocks[z][y][x]);
 }
 } // namespace world
 } // namespace vblck
