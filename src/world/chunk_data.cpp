@@ -17,7 +17,9 @@ std::vector<ChunkFaceData> Chunk::generateChunkData()
 				if(!block || !block->solid)
 					continue;
 				ChunkFaceData face;
-				face.position = glm::vec3(x, y, z);
+				face.x = x;
+				face.y = y;
+				face.z = z;
 				if(!isSolid(x - 1, y, z))
 				{
 					face.face = CHUNK_FACES_LEFT;

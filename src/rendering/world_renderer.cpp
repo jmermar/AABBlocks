@@ -24,35 +24,7 @@ void WorldRenderer::create()
 {
 	initDescriptorPool();
 
-	std::vector<ChunkFaceData> chunkData;
-
-	chunkData.resize(6);
-	chunkData[0].face = 0;
-	chunkData[0].position = glm::vec3(0);
-	chunkData[0].textureId = 49;
-
-	chunkData[1].face = 1;
-	chunkData[1].position = glm::vec3(0);
-	chunkData[1].textureId = 49;
-
-	chunkData[2].face = 2;
-	chunkData[2].position = glm::vec3(0);
-	chunkData[2].textureId = 49;
-
-	chunkData[3].face = 3;
-	chunkData[3].position = glm::vec3(0);
-	chunkData[3].textureId = 49;
-
-	chunkData[4].face = 4;
-	chunkData[4].position = glm::vec3(0);
-	chunkData[4].textureId = 48;
-
-	chunkData[5].face = 5;
-	chunkData[5].position = glm::vec3(0);
-	chunkData[5].textureId = 0;
-
 	chunkRenderer.create(&descriptorAllocator);
-	chunkRenderer.loadChunk(glm::vec3(0), chunkData);
 }
 
 void WorldRenderer::initDescriptorPool()

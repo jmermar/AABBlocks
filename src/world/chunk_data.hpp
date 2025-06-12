@@ -11,7 +11,7 @@ constexpr uint32_t CHUNK_SIZE = 32;
 struct Chunk
 {
 	glm::vec3 position;
-	std::array<std::array<std::array<uint32_t, CHUNK_SIZE>, CHUNK_SIZE>, CHUNK_SIZE> blocks;
+	std::array<std::array<std::array<uint16_t, CHUNK_SIZE>, CHUNK_SIZE>, CHUNK_SIZE> blocks;
 
 	std::vector<ChunkFaceData> generateChunkData();
 	const BlockData* getBlock(int32_t x, int32_t y, int32_t z);

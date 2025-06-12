@@ -13,10 +13,9 @@ enum class Result
 
 struct ChunkFaceData
 {
-	glm::vec3 position;
-	uint32_t face;
+	uint8_t x, y, z;
+	uint8_t face;
 	uint32_t textureId;
-	uint32_t pad[3];
 };
 
 enum ChunkFaces

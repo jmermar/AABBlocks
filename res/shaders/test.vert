@@ -4,8 +4,7 @@
 layout (location=0) out vec3 outUv;
 
 struct ChunkFace {
-	vec3 position;
-	uint face;
+	uint posAndFace;
 	uint textureId;
 };
 
@@ -39,8 +38,12 @@ void main()
 	uint fineIdx = idx % 6;
     // Interpretar el address como un puntero a un array de VertexBuffer
     ChunkFace face = pc.faces.faces[idx / 6];
-	Vertex vertex = vertices[face.face * 6 + fineIdx];
+	uint faceId = face.posAndFace >> 24;
+	float x = face.posAndFace & 0xff;
+	float y = (face.posAndFace>>8) & 0xff;
+	float z = (face.posAndFace>>16) & 0xff;
+	Vertex vertex = vertices[faceId * 6 + fineIdx];
 
-	gl_Position = ubo.projView * vec4((pc.position + face.position + vertex.pos), 1);
+	gl_Position = ubo.projView * vec4((pc.position + vec3(x, y, z) + vertex.pos), 1);
 	outUv = vec3(vertex.uv, face.textureId);
 }

@@ -202,6 +202,7 @@ int main(int argc, char** argv)
 			if(world->drawGui())
 			{
 				sceneState = SCENE_STATE_MAINMENU;
+				world->clear();
 				renderer->worldRenderer->clearWorld();
 			}
 		}

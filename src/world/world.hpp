@@ -107,6 +107,14 @@ struct World
 		return world.get();
 	}
 
+	void clear()
+	{
+		worldSize = 0;
+		worldHeight = 0;
+		chunks.clear();
+		chunks.shrink_to_fit();
+	}
+
 private:
 	void updatePlayer(float deltaTime);
 };
