@@ -26,12 +26,16 @@ struct ChunkRenderer
 	VkDescriptorSet descriptorSet{};
 
 	vk::SSBO precomputedVertices{};
+	vk::SSBO chunksDataBuffer{};
+	vk::SSBO chunkDrawCommands{};
 
 	std::unordered_set<ChunkData*> chunks;
 
 	void createDescriptors(vk::DescriptorAllocator* allocator);
 	void createBuffers();
 	void createPipeline();
+
+	void regenerateChunks();
 
 	void destroy();
 

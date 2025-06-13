@@ -11,12 +11,14 @@ namespace render
 struct Vertex
 {
 	glm::vec3 position;
-	float pad[1];
+	float pad;
+	glm::vec3 normal;
+	float pad2;
 	glm::vec2 uv;
-	float pad2[2];
+	float pad3[2];
 };
 
-struct PushConstants
+struct ChunkDataBuffer
 {
 	VkDeviceAddress chunkFaces;
 	float pad[2];
@@ -29,31 +31,32 @@ struct Face
 	Vertex vertices[6];
 };
 
-constexpr Face pushFace(glm::vec3 top, glm::vec3 right, glm::vec3 down)
+constexpr Face pushFace(glm::vec3 top, glm::vec3 normal, glm::vec3 right, glm::vec3 down)
 {
+
 	Face pushFace;
-	pushFace.vertices[2] = {top, 0.f, glm::vec2(0, 0), {0.f, 0.f}};
-	pushFace.vertices[1] = {top + down, 0.f, glm::vec2(0, 1), {0.f, 0.f}};
-	pushFace.vertices[0] = {top + down + right, 0.f, glm::vec2(1, 1), {0.f, 0.f}};
-	pushFace.vertices[5] = {top, 0.f, glm::vec2(0, 0), {0.f, 0.f}};
-	pushFace.vertices[4] = {top + down + right, 0, glm::vec2(1, 1), {0.f, 0.f}};
-	pushFace.vertices[3] = {top + right, 0.f, glm::vec2(1, 0), {0.f, 0.f}};
+	pushFace.vertices[2] = {top, 0.f, normal, 0.f, glm::vec2(0, 0), {0.f, 0.f}};
+	pushFace.vertices[1] = {top + down, 0.f, normal, 0.f, glm::vec2(0, 1), {0.f, 0.f}};
+	pushFace.vertices[0] = {top + down + right, 0.f, normal, 0.f, glm::vec2(1, 1), {0.f, 0.f}};
+	pushFace.vertices[5] = {top, 0.f, normal, 0.f, glm::vec2(0, 0), {0.f, 0.f}};
+	pushFace.vertices[4] = {top + down + right, 0, normal, 0.f, glm::vec2(1, 1), {0.f, 0.f}};
+	pushFace.vertices[3] = {top + right, 0.f, normal, 0.f, glm::vec2(1, 0), {0.f, 0.f}};
 	return pushFace;
 };
 
 Face precomputedVerticesData[6] = {
 	//Front
-	pushFace({0, 1, 1}, {1, 0, 0}, {0, -1, 0}),
+	pushFace({0, 1, 1}, {0, 0, -1}, {1, 0, 0}, {0, -1, 0}),
 	//Back
-	pushFace({1, 1, 0}, {-1, 0, 0}, {0, -1, 0}),
+	pushFace({1, 1, 0}, {0, 0, 1}, {-1, 0, 0}, {0, -1, 0}),
 	// Right
-	pushFace({1, 1, 1}, {0, 0, -1}, {0, -1, 0}),
+	pushFace({1, 1, 1}, {1, 0, 0}, {0, 0, -1}, {0, -1, 0}),
 	// Left
-	pushFace({0, 1, 0}, {0, 0, 1}, {0, -1, 0}),
+	pushFace({0, 1, 0}, {-1, 0, 0}, {0, 0, 1}, {0, -1, 0}),
 	//Top
-	pushFace({0, 1, 0}, {1, 0, 0}, {0, 0, 1}),
+	pushFace({0, 1, 0}, {0, 1, 0}, {1, 0, 0}, {0, 0, 1}),
 	//Bottom
-	pushFace({0, 0, 1}, {1, 0, 0}, {0, 0, -1}),
+	pushFace({0, 0, 1}, {0, -1, 0}, {1, 0, 0}, {0, 0, -1}),
 
 };
 
@@ -64,6 +67,7 @@ void ChunkRenderer::createDescriptors(vk::DescriptorAllocator* allocator)
 	vk::DescriptorLayoutBuilder layoutBuilder;
 	layoutBuilder.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 	layoutBuilder.addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+	layoutBuilder.addBinding(2, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 	descriptorSetLayout =
 		layoutBuilder.build(Renderer::get()->device, VK_SHADER_STAGE_ALL_GRAPHICS);
 
@@ -93,25 +97,42 @@ void ChunkRenderer::createDescriptors(vk::DescriptorAllocator* allocator)
 	writeDescriptorSet.pBufferInfo = &bufferInfo;
 	writeDescriptorSet.pImageInfo = 0;
 	vkUpdateDescriptorSets(render->device, 1, &writeDescriptorSet, 0, 0);
+
+	bufferInfo.buffer = chunksDataBuffer.data.buffer;
+	bufferInfo.offset = 0;
+	bufferInfo.range = chunksDataBuffer.size;
+
+	writeDescriptorSet.dstBinding = 2;
+	writeDescriptorSet.dstArrayElement = 0;
+	writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+	writeDescriptorSet.pBufferInfo = &bufferInfo;
+	writeDescriptorSet.pImageInfo = 0;
+	vkUpdateDescriptorSets(render->device, 1, &writeDescriptorSet, 0, 0);
 }
 void ChunkRenderer::createBuffers()
 {
 	auto* render = Renderer::get();
+
+	// PrecomputedVertices
+
 	precomputedVertices.create(render->device, render->vma, sizeof(Face) * 6);
 	vk::StagingBuffer precomputedStaging;
 	precomputedStaging.create(render->device, render->vma, sizeof(Face) * 6);
 	precomputedStaging.write(std::span<Face>(precomputedVerticesData));
 	render->bufferWritter.writeToSSBO(precomputedStaging.data.buffer, &precomputedVertices);
 	precomputedStaging.destroy(&render->frameDeletionQueue);
+
+	// ChunkDataBuffer
+
+	chunksDataBuffer.create(render->device, render->vma, sizeof(ChunkDataBuffer) * 64 * 64 * 64);
+
+	//ChunkDrawCommands
+	chunkDrawCommands.create(
+		render->device, render->vma, sizeof(VkDrawIndirectCommand) * 64 * 64 * 64);
 }
 void ChunkRenderer::createPipeline()
 {
 	auto* render = Renderer::get();
-
-	VkPushConstantRange range;
-	range.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-	range.offset = 0;
-	range.size = sizeof(PushConstants);
 
 	// PipelineLayout
 	VkPipelineLayoutCreateInfo layoutInfo{.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
@@ -121,9 +142,6 @@ void ChunkRenderer::createPipeline()
 
 	layoutInfo.setLayoutCount = 2;
 	layoutInfo.pSetLayouts = descriptors;
-
-	layoutInfo.pushConstantRangeCount = 1;
-	layoutInfo.pPushConstantRanges = &range;
 
 	VKTRY(vkCreatePipelineLayout(render->device, &layoutInfo, nullptr, &pipelineLayout));
 
@@ -164,6 +182,46 @@ void ChunkRenderer::createPipeline()
 	vkDestroyShaderModule(render->device, vertexShader, nullptr);
 }
 
+void ChunkRenderer::regenerateChunks()
+{
+	auto* render = Renderer::get();
+	auto numChunks = chunks.size();
+	std::vector<ChunkDataBuffer> data(numChunks);
+	int i = 0;
+	for(auto* chunk : chunks)
+	{
+		data[i].chunkFaces = chunk->vertexAddr;
+		data[i].position = chunk->position;
+		i++;
+	}
+
+	vk::StagingBuffer staging;
+	staging.create(render->device, render->vma, numChunks * sizeof(ChunkDataBuffer));
+	staging.write<ChunkDataBuffer>(data);
+	render->bufferWritter.writeToSSBO(
+		staging.data.buffer, &chunksDataBuffer, numChunks * sizeof(ChunkDataBuffer));
+
+	std::vector<VkDrawIndirectCommand> drawCommandData(numChunks);
+	i = 0;
+	for(auto* chunk : chunks)
+	{
+		drawCommandData[i].firstInstance = i;
+		drawCommandData[i].instanceCount = 1;
+		drawCommandData[i].firstVertex = 0;
+		drawCommandData[i].vertexCount = chunk->numVertices;
+		i++;
+	}
+
+	vk::StagingBuffer drawStaging;
+	drawStaging.create(render->device, render->vma, numChunks * sizeof(VkDrawIndirectCommand));
+	drawStaging.write<VkDrawIndirectCommand>(drawCommandData);
+	render->bufferWritter.writeToSSBO(
+		drawStaging.data.buffer, &chunkDrawCommands, numChunks * sizeof(VkDrawIndirectCommand));
+
+	staging.destroy(&render->frameDeletionQueue);
+	drawStaging.destroy(&render->frameDeletionQueue);
+}
+
 void ChunkRenderer::destroy()
 {
 	auto* render = Renderer::get();
@@ -181,6 +239,8 @@ void ChunkRenderer::destroy()
 	}
 
 	precomputedVertices.destroy(&deletion);
+	chunkDrawCommands.destroy(&deletion);
+	chunksDataBuffer.destroy(&deletion);
 
 	deletion.deleteQueue(render->device, render->vma);
 }
@@ -276,15 +336,8 @@ void ChunkRenderer::render(VkCommandBuffer cmd)
 
 	vkCmdSetScissor(cmd, 0, 1, &scissor);
 
-	for(auto* chunk : chunks)
-	{
-		PushConstants push;
-		push.position = chunk->position;
-		push.chunkFaces = chunk->vertexAddr;
-		vkCmdPushConstants(
-			cmd, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &push);
-		vkCmdDraw(cmd, chunk->numVertices, 1, 0, 0);
-	}
+	vkCmdDrawIndirect(
+		cmd, chunkDrawCommands.data.buffer, 0, chunks.size(), sizeof(VkDrawIndirectCommand));
 
 	vkCmdEndRendering(cmd);
 }

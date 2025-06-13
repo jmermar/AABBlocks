@@ -5,22 +5,6 @@ namespace vblck
 {
 namespace world
 {
-float fractalNoise(FastNoiseLite& noiseGen, float x, float z, size_t nOctaves, float decay)
-{
-	float noise = 0;
-	float amp = 1;
-	float freq = 1;
-	float acc = 0;
-	for(size_t i = 0; i < nOctaves; i++)
-	{
-		acc += amp;
-		noise += noiseGen.GetNoise(x * freq, z * freq) * amp;
-		freq *= 2;
-		amp /= decay;
-	}
-
-	return noise / acc;
-}
 void WorldGenerator::initBlockIds()
 {
 	auto* db = &World::get()->blockDatabase;
@@ -35,6 +19,12 @@ void WorldGenerator::generateSolids()
 	auto* world = World::get();
 	FastNoiseLite noise;
 	noise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+	noise.SetFrequency(0.01f);
+	noise.SetSeed(1337);
+	noise.SetFractalType(FastNoiseLite::FractalType_FBm);
+	noise.SetFractalLacunarity(2.f);
+	noise.SetFractalOctaves(4);
+	noise.SetFractalGain(0.5f);
 	std::atomic<uint32_t> nChunks;
 #pragma omp parallel for
 	for(uint32_t cz = 0; cz < world->worldSize; cz++)
@@ -53,7 +43,8 @@ void WorldGenerator::generateSolids()
 					{
 						float wx = cx * CHUNK_SIZE + x;
 						float wz = cz * CHUNK_SIZE + z;
-						float n = fractalNoise(noise, wx * 0.5f, wz * 0.5f, 3, 1.5f);
+						float n = noise.GetNoise((float)wx, (float)wz) * 0.5f + 0.5f;
+
 						uint32_t h = baseHeight + n * baseAmplitude;
 						for(uint32_t y = 0; y < CHUNK_SIZE; y++)
 						{

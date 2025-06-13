@@ -28,10 +28,13 @@ System initSystemLinux(const char* win_name, int W, int H)
 	SDL_Vulkan_CreateSurface(system.window, system.instance, nullptr, &system.surface);
 
 	// vulkan 1.3 features
-	VkPhysicalDeviceVulkan13Features features{
+	VkPhysicalDeviceVulkan13Features features13{
 		.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES};
-	features.dynamicRendering = true;
-	features.synchronization2 = true;
+	features13.dynamicRendering = true;
+	features13.synchronization2 = true;
+
+	VkPhysicalDeviceFeatures features;
+	features.multiDrawIndirect = true;
 
 	// vulkan 1.2 features
 	VkPhysicalDeviceVulkan12Features features12{
@@ -41,8 +44,9 @@ System initSystemLinux(const char* win_name, int W, int H)
 
 	vkb::PhysicalDeviceSelector selector{vkb_inst};
 	vkb::PhysicalDevice physicalDevice = selector.set_minimum_version(1, 3)
-											 .set_required_features_13(features)
+											 .set_required_features_13(features13)
 											 .set_required_features_12(features12)
+											 .set_required_features(features)
 											 .set_surface(system.surface)
 											 .select()
 											 .value();

@@ -22,9 +22,9 @@ void generateWorldThread()
 	world->chunks.resize(world->worldSize * world->worldSize * world->worldHeight);
 
 	WorldGenerator generator;
-	generator.baseAmplitude = 8;
-	generator.baseHeight = 30;
-	generator.sandLevel = 20;
+	generator.baseAmplitude = 20;
+	generator.baseHeight = 16;
+	generator.sandLevel = 25;
 	generator.world_height = world->worldHeight;
 	generator.world_size = world->worldSize;
 	generator.generateWorld();
@@ -75,6 +75,10 @@ void World::generateChunkMeshes()
 	for(auto& cmd : chunkGenerateCommands)
 	{
 		renderer->worldRenderer->chunkRenderer.loadChunk(cmd.position, cmd.data);
+	}
+	if(chunkGenerateCommands.size() > 0)
+	{
+		renderer->worldRenderer->chunkRenderer.regenerateChunks();
 	}
 	chunkGenerateCommands.clear();
 }

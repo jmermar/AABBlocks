@@ -49,12 +49,12 @@ public:
 		writesBufferToTexture2DArray.push_back(command);
 	}
 
-	inline void writeToSSBO(VkBuffer src, vk::SSBO* dst)
+	inline void writeToSSBO(VkBuffer src, vk::SSBO* dst, uint32_t size = 0)
 	{
 		BufferToBuffer command;
 		command.src = src;
 		command.dst = dst->data.buffer;
-		command.size = dst->size;
+		command.size = size ? size : dst->size;
 		writesBufferToBuffer.push_back(command);
 	}
 
