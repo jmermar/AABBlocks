@@ -40,5 +40,29 @@ struct DescriptorAllocator
 	VkDescriptorSet allocate(VkDevice device, VkDescriptorSetLayout layout);
 };
 
+struct DescriptorWritter
+{
+	static inline void writeBuffer(VkDevice device,
+								   VkDescriptorSet descriptorSet,
+								   uint32_t bindPoint,
+								   VkBuffer buffer,
+								   size_t size)
+	{
+		VkDescriptorBufferInfo bufferInfo;
+		bufferInfo.buffer = buffer;
+		bufferInfo.offset = 0;
+		bufferInfo.range = size;
+
+		VkWriteDescriptorSet writeDescriptorSet{.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+		writeDescriptorSet.dstSet = descriptorSet;
+		writeDescriptorSet.descriptorCount = 1;
+		writeDescriptorSet.dstBinding = bindPoint;
+		writeDescriptorSet.dstArrayElement = 0;
+		writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		writeDescriptorSet.pBufferInfo = &bufferInfo;
+		vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, 0);
+	}
+};
+
 } // namespace vk
 } // namespace vblck

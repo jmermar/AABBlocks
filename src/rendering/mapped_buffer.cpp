@@ -34,7 +34,7 @@ void MappedBuffer::destroy()
 }
 void* MappedBuffer::getData()
 {
-	return ((unsigned char*)data + size * Renderer::get()->getFrameIndex());
+	return ((unsigned char*)data + alignedSize * Renderer::get()->getFrameIndex());
 }
 VkDeviceSize MappedBuffer::getBaseAddr(uint32_t frameNumber)
 {

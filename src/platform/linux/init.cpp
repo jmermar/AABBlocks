@@ -35,12 +35,14 @@ System initSystemLinux(const char* win_name, int W, int H)
 
 	VkPhysicalDeviceFeatures features;
 	features.multiDrawIndirect = true;
+	features.shaderInt64 = true;
 
 	// vulkan 1.2 features
 	VkPhysicalDeviceVulkan12Features features12{
 		.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES};
 	features12.bufferDeviceAddress = true;
 	features12.descriptorIndexing = true;
+	features12.drawIndirectCount = true;
 
 	vkb::PhysicalDeviceSelector selector{vkb_inst};
 	vkb::PhysicalDevice physicalDevice = selector.set_minimum_version(1, 3)

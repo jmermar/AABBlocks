@@ -5,13 +5,13 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "AABBlocks",
+            "name": "AABBlocks (Debug)",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/src/AABBlocks",
+            "program": "${workspaceFolder}/build/debug/src/AABBlocks",
             "args": [],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/build/src/",
+            "cwd": "${workspaceFolder}/build/debug/src/",
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
@@ -28,6 +28,5 @@
                 }
             ]
         }
-
     ]
 }

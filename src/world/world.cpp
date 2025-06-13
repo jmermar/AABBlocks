@@ -44,12 +44,11 @@ void generateWorldThread()
 			{
 
 				auto* chunk = world->chunkAt(cx, cy, cz);
-				chunk->position = glm::vec3(cx, cy, cz) * (float)CHUNK_SIZE;
 				ChunkGenerateCommand genCmd{};
 				genCmd.data = chunk->generateChunkData();
 				if(genCmd.data.size() > 0)
 				{
-					genCmd.position = chunk->position;
+					genCmd.position = glm::vec3(cx, cy, cz) * (float)CHUNK_SIZE;
 					local.push_back(genCmd);
 				}
 				nChunks++;
@@ -74,11 +73,11 @@ void World::generateChunkMeshes()
 	auto* renderer = render::Renderer::get();
 	for(auto& cmd : chunkGenerateCommands)
 	{
-		renderer->worldRenderer->chunkRenderer.loadChunk(cmd.position, cmd.data);
+		renderer->worldRenderer.chunkRenderer.loadChunk(cmd.position, cmd.data);
 	}
 	if(chunkGenerateCommands.size() > 0)
 	{
-		renderer->worldRenderer->chunkRenderer.regenerateChunks();
+		renderer->worldRenderer.chunkRenderer.regenerateChunks();
 	}
 	chunkGenerateCommands.clear();
 }
@@ -157,7 +156,7 @@ void Player::init()
 	position = glm::vec3(1, 0, 1) * (float)(World::get()->worldSize * 0.5f * CHUNK_SIZE);
 	position.y = 50;
 	forward = glm::vec3(0, 0, 1);
-	moveSpeed = 8;
+	moveSpeed = 40;
 }
 void Player::rotateY(float degrees)
 {

@@ -15,6 +15,23 @@ namespace vblck
 namespace render
 {
 
+struct Plane
+{
+	glm::vec3 normal;
+	float d;
+	inline void norm()
+	{
+		auto len = glm::length(normal);
+		normal /= len;
+		d /= len;
+	}
+};
+
+struct Frustum
+{
+	Plane top, bottom, left, right, front, back;
+};
+
 struct Camera
 {
 	glm::vec3 position{};
@@ -26,11 +43,14 @@ struct Camera
 
 	glm::mat4 getProjection();
 	glm::mat4 getView();
+
+	Frustum getFrustum();
 };
 
 struct RenderSate
 {
 	Camera camera{};
+	Camera cullCamera{};
 };
 
 constexpr unsigned int FRAME_OVERLAP = 2;
@@ -91,9 +111,14 @@ struct Renderer
 	vk::Texture2D backbuffer;
 	vk::DepthTexture depthBuffer;
 
-	std::unique_ptr<WorldRenderer> worldRenderer;
+	WorldRenderer worldRenderer;
 
 	vk::Texture2DArray textureAtlas{};
+
+	struct
+	{
+		Frustum camFrustum;
+	} computedUtils;
 
 	void initVMA();
 	void initCommands();

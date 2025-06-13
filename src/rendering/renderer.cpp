@@ -8,6 +8,7 @@
 #include "vk/textures.hpp"
 #include <VkBootstrap.h>
 #include <backends/imgui_impl_vulkan.h>
+#include <glm/gtc/matrix_access.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <imgui.h>
 constexpr bool bUseValidationLayers = true;
@@ -16,19 +17,20 @@ namespace vblck
 namespace render
 {
 
-struct UniformGlobalData
+struct alignas(16) UniformGlobalData
 {
 	glm::mat4 projMatrix;
 	glm::mat4 viewMatrix;
 	glm::mat4 projViewMatrix;
+	Frustum camFrustum;
 };
 
 void GlobalRenderData::create()
 {
 	vk::DescriptorLayoutBuilder layoutBuilder;
 	layoutBuilder.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-	globalDescriptorLayout =
-		layoutBuilder.build(Renderer::get()->device, VK_SHADER_STAGE_ALL_GRAPHICS);
+	globalDescriptorLayout = layoutBuilder.build(
+		Renderer::get()->device, VK_SHADER_STAGE_ALL_GRAPHICS | VK_SHADER_STAGE_COMPUTE_BIT);
 
 	globalBuffer.create(sizeof(UniformGlobalData));
 	std::vector<vk::DescriptorAllocator::PoolSizeRatio> ratios;
@@ -104,7 +106,7 @@ void Renderer::cleanup()
 {
 	vkDeviceWaitIdle(device);
 	textureAtlas.destroy(&mainDeletionQueue);
-	worldRenderer = 0;
+	worldRenderer.destroy();
 	renderData.destroy();
 	destroySwapchain();
 	deletePendingObjects();
@@ -121,7 +123,7 @@ void Renderer::renderLogic(CommandBuffer* cmd)
 	backbuffer.transition(
 		cmd->getCmd(), VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
-	worldRenderer->render(cmd->getCmd());
+	worldRenderer.render(cmd->getCmd());
 
 	backbuffer.transition(cmd->getCmd(),
 						  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
@@ -148,7 +150,7 @@ void Renderer::renderImGUI(VkCommandBuffer cmd, VkImageView targetImageView)
 
 void Renderer::initRenderers()
 {
-	worldRenderer = std::make_unique<WorldRenderer>(device, vma);
+	worldRenderer.create();
 }
 
 vk::Texture2D Renderer::loadTexture2D(const char* path)
@@ -223,6 +225,7 @@ void Renderer::recreateSwapchain(int w, int h)
 
 void Renderer::renderFrame(RenderSate& state)
 {
+	computedUtils.camFrustum = state.cullCamera.getFrustum();
 	vkWaitForFences(device, 1, &getCurrentFrame().renderFence, true, 1000000000);
 	vkResetFences(device, 1, &getCurrentFrame().renderFence);
 
@@ -252,6 +255,7 @@ void Renderer::renderFrame(RenderSate& state)
 	uniformGlobalData->projMatrix = state.camera.getProjection();
 	uniformGlobalData->projViewMatrix =
 		uniformGlobalData->projMatrix * uniformGlobalData->viewMatrix;
+	uniformGlobalData->camFrustum = computedUtils.camFrustum;
 
 	cmd->begin();
 	renderData.writeDescriptors(cmd->getCmd());
@@ -350,6 +354,43 @@ glm::mat4 Camera::getProjection()
 glm::mat4 Camera::getView()
 {
 	return glm::lookAt(position, position + forward, glm::vec3(0.f, -1.f, 0.f));
+}
+Frustum Camera::getFrustum()
+{
+	auto viewProjMatrix = getProjection() * getView();
+	Frustum frustum;
+	glm::vec4 rowX = glm::row(viewProjMatrix, 0);
+	glm::vec4 rowY = glm::row(viewProjMatrix, 1);
+	glm::vec4 rowZ = glm::row(viewProjMatrix, 2);
+	glm::vec4 rowW = glm::row(viewProjMatrix, 3);
+
+	// Left
+	frustum.left.normal = glm::vec3(rowW + rowX);
+	frustum.left.d = (rowW + rowX).w;
+
+	// Right
+	frustum.right.normal = glm::vec3(rowW - rowX);
+	frustum.right.d = (rowW - rowX).w;
+
+	// Bottom
+	frustum.bottom.normal = glm::vec3(rowW + rowY);
+	frustum.bottom.d = (rowW + rowY).w;
+
+	// Top
+	frustum.top.normal = glm::vec3(rowW - rowY);
+	frustum.top.d = (rowW - rowY).w;
+
+	// Near
+	frustum.front.normal = glm::vec3(rowW + rowZ);
+	frustum.front.d = (rowW + rowZ).w;
+
+	// Far
+	frustum.back.normal = glm::vec3(rowW - rowZ);
+	frustum.back.d = (rowW - rowZ).w;
+
+	frustum.back.norm();
+
+	return frustum;
 }
 } // namespace render
 } // namespace vblck

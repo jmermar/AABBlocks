@@ -1,4 +1,5 @@
 #pragma once
+#include "mapped_buffer.hpp"
 #include "types.hpp"
 #include "vk/buffers.hpp"
 #include "vk/descriptors.hpp"
@@ -18,6 +19,32 @@ struct ChunkData
 	glm::vec3 position;
 	uint32_t numVertices;
 };
+
+struct ChunkDrawCommandsDispatcher
+{
+	VkPipelineLayout pipelineLayout;
+	VkPipeline pipeline;
+	VkDescriptorSetLayout descriptorSetLayout;
+	VkDescriptorSet descriptorSet;
+
+	vk::SSBO dispatchBuffer{};
+
+	void createBuffers();
+	void createDescriptors(vk::DescriptorAllocator* allocator);
+	void createPipeline();
+
+	void destroy();
+
+	void create(vk::DescriptorAllocator* allocator)
+	{
+		createBuffers();
+		createDescriptors(allocator);
+		createPipeline();
+	}
+
+	void dispatch(VkCommandBuffer cmd, uint32_t nChunks);
+};
+
 struct ChunkRenderer
 {
 	VkPipelineLayout pipelineLayout;
@@ -30,6 +57,8 @@ struct ChunkRenderer
 	vk::SSBO chunkDrawCommands{};
 
 	std::unordered_set<ChunkData*> chunks;
+
+	ChunkDrawCommandsDispatcher dispatcher;
 
 	void createDescriptors(vk::DescriptorAllocator* allocator);
 	void createBuffers();
@@ -49,6 +78,7 @@ struct ChunkRenderer
 		createBuffers();
 		createDescriptors(allocator);
 		createPipeline();
+		dispatcher.create(allocator);
 	}
 
 	void render(VkCommandBuffer cmd);

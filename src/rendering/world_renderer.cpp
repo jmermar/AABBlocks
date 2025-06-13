@@ -27,6 +27,13 @@ void WorldRenderer::create()
 	chunkRenderer.create(&descriptorAllocator);
 }
 
+void WorldRenderer::destroy()
+{
+	auto* render = Renderer::get();
+	chunkRenderer.destroy();
+	vkDestroyDescriptorPool(render->device, descriptorAllocator.pool, nullptr);
+}
+
 void WorldRenderer::initDescriptorPool()
 {
 	auto* render = Renderer::get();

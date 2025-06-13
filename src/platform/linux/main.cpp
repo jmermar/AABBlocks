@@ -89,7 +89,6 @@ int main(int argc, char** argv)
 
 	// Init world
 	auto* world = world::World::get();
-	world->create(8, 16);
 
 	System system{};
 
@@ -116,6 +115,7 @@ int main(int argc, char** argv)
 	renderState.camera.aspect = 1920.f / 1080.f;
 	renderState.camera.position = glm::vec3(50, 20, 50);
 	renderState.camera.forward = glm::vec3(0, 0, 1);
+	renderState.cullCamera = renderState.camera;
 	uint64_t frameDelta = 0;
 	float deltaTime = 0;
 
@@ -203,7 +203,7 @@ int main(int argc, char** argv)
 			{
 				sceneState = SCENE_STATE_MAINMENU;
 				world->clear();
-				renderer->worldRenderer->clearWorld();
+				renderer->worldRenderer.clearWorld();
 			}
 		}
 
@@ -216,6 +216,7 @@ int main(int argc, char** argv)
 
 		renderState.camera.position = world->player.position;
 		renderState.camera.forward = world->player.forward;
+		renderState.cullCamera = renderState.camera;
 
 		renderer->renderFrame(renderState);
 

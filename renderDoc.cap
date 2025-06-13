@@ -5,7 +5,7 @@
         "commandLine": "",
         "environment": [
         ],
-        "executable": "/home/jose/projects/mios/AABBlocks/build/src/AABBlocks",
+        "executable": "/home/jose/projects/mios/AABBlocks/build/debug/src/AABBlocks",
         "inject": false,
         "numQueuedFrames": 0,
         "options": {
@@ -23,6 +23,6 @@
             "verifyBufferAccess": false
         },
         "queuedFrameCap": 0,
-        "workingDir": "/home/jose/projects/mios/AABBlocks/build/src/"
+        "workingDir": "/home/jose/projects/mios/AABBlocks/build/debug/src/"
     }
 }

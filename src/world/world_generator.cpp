@@ -35,6 +35,9 @@ void WorldGenerator::generateSolids()
 			{
 
 				auto* chunk = world->chunkAt(cx, cy, cz);
+				chunk->cx = cx;
+				chunk->cz = cz;
+				chunk->cy = cy;
 
 				for(uint32_t z = 0; z < CHUNK_SIZE; z++)
 				{
