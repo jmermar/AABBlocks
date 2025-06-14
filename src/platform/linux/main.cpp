@@ -70,6 +70,11 @@ bool mainMenuUpdateGUI(float frameDelta)
 		world->create(64, 16);
 		return true;
 	}
+	if(ImGui::Button("Gen 128x128 world"))
+	{
+		world->create(128, 16);
+		return true;
+	}
 	return false;
 }
 

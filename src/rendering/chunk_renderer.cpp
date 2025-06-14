@@ -9,6 +9,8 @@ namespace vblck
 namespace render
 {
 
+constexpr size_t MAX_CHUNKS = 128 * 128 * 64;
+
 struct Vertex
 {
 	glm::vec3 position;
@@ -236,11 +238,11 @@ void ChunkRenderer::createBuffers()
 
 	// ChunkDataBuffer
 
-	chunksDataBuffer.create(render->device, render->vma, sizeof(ChunkDataBuffer) * 64 * 64 * 64);
+	chunksDataBuffer.create(render->device, render->vma, sizeof(ChunkDataBuffer) * MAX_CHUNKS);
 
 	//ChunkDrawCommands
 	chunkDrawCommands.create(
-		render->device, render->vma, sizeof(VkDrawIndirectCommand) * 64 * 64 * 64);
+		render->device, render->vma, sizeof(VkDrawIndirectCommand) * MAX_CHUNKS);
 }
 void ChunkRenderer::createPipeline()
 {
