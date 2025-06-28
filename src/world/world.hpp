@@ -1,5 +1,6 @@
 #pragma once
 #include "chunk_data.hpp"
+#include "collisions/collisions.hpp"
 #include <atomic>
 #include <chrono>
 #include <memory>
@@ -12,7 +13,7 @@ namespace world
 
 struct Player
 {
-	glm::vec3 position;
+	collisions::AABB body;
 	glm::vec3 forward;
 
 	float moveSpeed;
@@ -21,6 +22,8 @@ struct Player
 
 	void rotateY(float degrees);
 	void rotateX(float degrees);
+
+	void move(glm::vec3 delta);
 };
 
 struct ChunkGenerateCommand

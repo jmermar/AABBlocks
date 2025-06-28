@@ -219,7 +219,8 @@ int main(int argc, char** argv)
 			world->update(deltaTime);
 		}
 
-		renderState.camera.position = world->player.position;
+		renderState.camera.position =
+			world->player.body.position + world->player.body.size + glm::vec3(0.f, -0.3f, 0.f);
 		renderState.camera.forward = world->player.forward;
 		renderState.cullCamera = renderState.camera;
 

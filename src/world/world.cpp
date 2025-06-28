@@ -130,31 +130,34 @@ bool World::drawGui()
 void World::updatePlayer(float deltaTime)
 {
 	auto right = glm::normalize(glm::cross(glm::vec3(0, 1, 0), player.forward));
+	glm::vec3 moveDelta;
 	if(InputData::isDown(INPUT_MOVE_FORWARD))
 	{
-		player.position += player.forward * deltaTime * player.moveSpeed;
+		moveDelta += player.forward * deltaTime * player.moveSpeed;
 	}
 	if(InputData::isDown(INPUT_MOVE_BACKWARD))
 	{
-		player.position -= player.forward * deltaTime * player.moveSpeed;
+		moveDelta -= player.forward * deltaTime * player.moveSpeed;
 	}
 	if(InputData::isDown(INPUT_MOVE_LEFT))
 	{
-		player.position -= right * deltaTime * player.moveSpeed;
+		moveDelta -= right * deltaTime * player.moveSpeed;
 	}
 	if(InputData::isDown(INPUT_MOVE_RIGHT))
 	{
-		player.position += right * deltaTime * player.moveSpeed;
+		moveDelta += right * deltaTime * player.moveSpeed;
 	}
 
 	player.rotateY(InputData::getAxis().x);
 	player.rotateX(-InputData::getAxis().y);
+	player.move(moveDelta);
 }
 
 void Player::init()
 {
-	position = glm::vec3(1, 0, 1) * (float)(World::get()->worldSize * 0.5f * CHUNK_SIZE);
-	position.y = 50;
+	body.position = glm::vec3(1, 0, 1) * (float)(World::get()->worldSize * 0.5f * CHUNK_SIZE);
+	body.size = glm::vec3(0.8f, 1.8f, 0.8f);
+	body.position.y = 50;
 	forward = glm::vec3(0, 0, 1);
 	moveSpeed = 40;
 }
@@ -174,6 +177,12 @@ void Player::rotateX(float degrees)
 	glm::quat rotationC = glm::conjugate(rotation);
 
 	forward = rotation * forward * rotationC;
+}
+void Player::move(glm::vec3 delta)
+{
+	body.position.y += collisions::moveY(body, delta.y);
+	body.position.x += collisions::moveX(body, delta.x);
+	body.position.z += collisions::moveZ(body, delta.z);
 }
 void BlockDatabase::loadDatabase(const std::string& file)
 {
