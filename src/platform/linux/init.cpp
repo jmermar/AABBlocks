@@ -1,5 +1,24 @@
 #include "init.hpp"
 #include "VkBootstrap.h"
+#include <iostream>
+
+VKAPI_ATTR VkBool32 VKAPI_CALL
+debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+			  VkDebugUtilsMessageTypeFlagsEXT messageType,
+			  const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+			  void* pUserData)
+{
+
+	std::cerr << "Validation layer: " << pCallbackData->pMessage << std::endl;
+
+	// Si es un error, detenemos el programa
+	if(messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
+	{
+		std::abort();
+	}
+
+	return VK_FALSE;
+}
 
 namespace vblck
 {
@@ -16,7 +35,7 @@ System initSystemLinux(const char* win_name, int W, int H)
 
 	auto inst_ret = builder.set_app_name("VBlck")
 						.request_validation_layers(true)
-						.use_default_debug_messenger()
+						.set_debug_callback(debugCallback)
 						.require_api_version(1, 3, 0)
 						.build();
 

@@ -1,6 +1,7 @@
 #pragma once
 #include "chunk_data.hpp"
 #include "collisions/collisions.hpp"
+#include "player.hpp"
 #include <atomic>
 #include <chrono>
 #include <memory>
@@ -10,21 +11,6 @@ namespace vblck
 {
 namespace world
 {
-
-struct Player
-{
-	collisions::AABB body;
-	glm::vec3 forward;
-
-	float moveSpeed;
-
-	void init();
-
-	void rotateY(float degrees);
-	void rotateX(float degrees);
-
-	void move(glm::vec3 delta);
-};
 
 struct ChunkGenerateCommand
 {
@@ -62,6 +48,12 @@ struct BlockDatabase
 
 struct World
 {
+	struct
+	{
+		float gravity = -19.6;
+		float maxFallSpeed = 32;
+	} physicsData;
+
 	uint32_t worldSize{}, worldHeight{};
 	BlockDatabase blockDatabase;
 	std::vector<Chunk> chunks;

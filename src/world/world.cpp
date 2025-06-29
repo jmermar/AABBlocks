@@ -3,10 +3,6 @@
 #include "input.hpp"
 #include "rendering/renderer.hpp"
 #include "world_generator.hpp"
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/quaternion.hpp>
-#include <glm/gtc/type_ptr.hpp>
-#include <glm/matrix.hpp>
 #include <imgui.h>
 #include <omp.h>
 namespace vblck
@@ -129,60 +125,7 @@ bool World::drawGui()
 }
 void World::updatePlayer(float deltaTime)
 {
-	auto right = glm::normalize(glm::cross(glm::vec3(0, 1, 0), player.forward));
-	glm::vec3 moveDelta;
-	if(InputData::isDown(INPUT_MOVE_FORWARD))
-	{
-		moveDelta += player.forward * deltaTime * player.moveSpeed;
-	}
-	if(InputData::isDown(INPUT_MOVE_BACKWARD))
-	{
-		moveDelta -= player.forward * deltaTime * player.moveSpeed;
-	}
-	if(InputData::isDown(INPUT_MOVE_LEFT))
-	{
-		moveDelta -= right * deltaTime * player.moveSpeed;
-	}
-	if(InputData::isDown(INPUT_MOVE_RIGHT))
-	{
-		moveDelta += right * deltaTime * player.moveSpeed;
-	}
-
-	player.rotateY(InputData::getAxis().x);
-	player.rotateX(-InputData::getAxis().y);
-	player.move(moveDelta);
-}
-
-void Player::init()
-{
-	body.position = glm::vec3(1, 0, 1) * (float)(World::get()->worldSize * 0.5f * CHUNK_SIZE);
-	body.size = glm::vec3(0.8f, 1.8f, 0.8f);
-	body.position.y = 50;
-	forward = glm::vec3(0, 0, 1);
-	moveSpeed = 40;
-}
-void Player::rotateY(float degrees)
-{
-	auto angle = glm::radians(degrees / 2.f);
-	glm::quat rotation(glm::cos(angle), glm::vec3(0, 1, 0) * glm::sin(angle));
-	glm::quat rotationC = glm::conjugate(rotation);
-
-	forward = rotation * forward * rotationC;
-}
-void Player::rotateX(float degrees)
-{
-	auto angle = glm::radians(degrees / 2.f);
-	glm::quat rotation(glm::cos(angle),
-					   glm::normalize(glm::cross(forward, glm::vec3(0, 1, 0))) * glm::sin(angle));
-	glm::quat rotationC = glm::conjugate(rotation);
-
-	forward = rotation * forward * rotationC;
-}
-void Player::move(glm::vec3 delta)
-{
-	body.position.y += collisions::moveY(body, delta.y);
-	body.position.x += collisions::moveX(body, delta.x);
-	body.position.z += collisions::moveZ(body, delta.z);
+	player.update(deltaTime);
 }
 void BlockDatabase::loadDatabase(const std::string& file)
 {
