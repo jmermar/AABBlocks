@@ -223,7 +223,7 @@ void Renderer::recreateSwapchain(int w, int h)
 	depthBuffer.createTexture(device, vma, VkExtent2D{(unsigned int)w, (unsigned int)h}, 1);
 }
 
-void Renderer::renderFrame(RenderSate& state)
+void Renderer::renderFrame(RenderState& state)
 {
 	computedUtils.camFrustum = state.cullCamera.getFrustum();
 	vkWaitForFences(device, 1, &getCurrentFrame().renderFence, true, 1000000000);

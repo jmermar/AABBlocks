@@ -96,7 +96,7 @@ void Player::update(float deltaTime)
 	}
 }
 
-void Player::updatePhysiqs(float dt)
+void Player::fixedUpdate()
 {
 	if(doJump)
 	{
@@ -107,9 +107,9 @@ void Player::updatePhysiqs(float dt)
 	auto world = World::get();
 	velocity.x = moveInput.x * moveSpeed;
 	velocity.z = moveInput.z * moveSpeed;
-	velocity.y =
-		std::max(-world->physicsData.maxFallSpeed, velocity.y + world->physicsData.gravity * dt);
-	move(velocity * dt);
+	velocity.y = std::max(-world->physicsData.maxFallSpeed,
+						  velocity.y + world->physicsData.gravity * fixedDelta);
+	move(velocity * fixedDelta);
 	moveInput = glm::vec3(0);
 }
 } // namespace world

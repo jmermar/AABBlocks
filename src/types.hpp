@@ -5,6 +5,10 @@
 #include <vector>
 namespace vblck
 {
+
+constexpr uint32_t fixedTicks = 50;
+constexpr float fixedDelta = 1.f / fixedTicks;
+
 enum class Result
 {
 	SUCESS,

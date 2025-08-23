@@ -1,5 +1,6 @@
 #pragma once
 #include "chunk_data.hpp"
+#include "world.hpp"
 #include <memory>
 #include <unordered_map>
 namespace vblck
@@ -23,11 +24,16 @@ struct WorldGenerator
 		uint32_t dirt;
 	} blockIds;
 
+	std::atomic<float> progress;
+	std::atomic<bool> finished;
+	std::vector<ChunkGenerateCommand> chunksToGenerate;
+
 	void initBlockIds();
 
 	void generateSolids();
 
 	void generateWorld();
+	void generateChunkData();
 };
 } // namespace world
 } // namespace vblck

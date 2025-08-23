@@ -1,6 +1,7 @@
 #include "world_generator.hpp"
 #include "FastNoiseLite.h"
 #include "world.hpp"
+#include <omp.h>
 namespace vblck
 {
 namespace world
@@ -81,7 +82,7 @@ void WorldGenerator::generateSolids()
 					}
 				}
 				nChunks++;
-				world->progress =
+				progress =
 					(nChunks / (float)(world->worldHeight * world->worldSize * world->worldSize)) *
 					0.5f;
 			}
@@ -91,8 +92,57 @@ void WorldGenerator::generateSolids()
 
 void WorldGenerator::generateWorld()
 {
-	initBlockIds();
-	generateSolids();
+	finished = false;
+	std::thread t([&]() -> void {
+		auto* world = World::get();
+		world->create(world_size, world_height);
+		initBlockIds();
+		generateSolids();
+		generateChunkData();
+		finished = true;
+	});
+	t.detach();
+}
+void WorldGenerator::generateChunkData()
+{
+	auto* world = World::get();
+	std::atomic<uint32_t> nChunks = 0;
+
+	int numThreads = omp_get_max_threads();
+	std::vector<std::vector<ChunkGenerateCommand>> localVectors(numThreads);
+
+#pragma omp parallel for
+	for(uint32_t cz = 0; cz < world->worldSize; cz++)
+	{
+		for(uint32_t cx = 0; cx < world->worldSize; cx++)
+		{
+			int tid = omp_get_thread_num();
+			std::vector<ChunkGenerateCommand>& local = localVectors[tid];
+			for(uint32_t cy = 0; cy < world->worldHeight; cy++)
+			{
+
+				auto* chunk = world->chunkAt(cx, cy, cz);
+				ChunkGenerateCommand genCmd{};
+				genCmd.data = chunk->generateChunkData();
+				if(genCmd.data.size() > 0)
+				{
+					genCmd.position = glm::vec3(cx, cy, cz) * (float)CHUNK_SIZE;
+					local.push_back(genCmd);
+				}
+				nChunks++;
+				progress =
+					(nChunks / (float)(world->worldHeight * world->worldSize * world->worldSize)) *
+						0.5f +
+					0.5f;
+			}
+		}
+	}
+	for(auto& local : localVectors)
+	{
+		chunksToGenerate.insert(chunksToGenerate.end(), local.begin(), local.end());
+	}
+
+	finished = true;
 }
 } // namespace world
 } // namespace vblck

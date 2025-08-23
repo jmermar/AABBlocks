@@ -1,3 +1,4 @@
+#pragma once
 #include "buffer_writter.hpp"
 #include "command_buffer.hpp"
 #include "glm/glm.hpp"
@@ -47,7 +48,7 @@ struct Camera
 	Frustum getFrustum();
 };
 
-struct RenderSate
+struct RenderState
 {
 	Camera camera{};
 	Camera cullCamera{};
@@ -203,7 +204,7 @@ struct Renderer
 
 	void recreateSwapchain(int w, int h);
 
-	void renderFrame(RenderSate& state);
+	void renderFrame(RenderState& state);
 };
 } // namespace render
 } // namespace vblck

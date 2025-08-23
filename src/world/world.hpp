@@ -58,13 +58,7 @@ struct World
 	BlockDatabase blockDatabase;
 	std::vector<Chunk> chunks;
 
-	Player player;
-
 	std::vector<ChunkGenerateCommand> chunkGenerateCommands;
-
-	std::atomic<bool> loaded;
-	std::atomic<float> progress;
-	std::thread physicsThread;
 
 	inline Chunk* chunkAt(int32_t cx, int32_t cy, int32_t cz)
 	{
@@ -95,9 +89,6 @@ struct World
 	void destroy();
 
 	void update(float deltaTime);
-	void updatePhysiqs(float deltaTime);
-
-	bool drawGui();
 
 	static World* get()
 	{

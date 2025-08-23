@@ -2,6 +2,7 @@
 #include "init_imgui.hpp"
 #include "input.hpp"
 #include "rendering/renderer.hpp"
+#include "scenes/scene_world.hpp"
 #include "world/world.hpp"
 #include <SDL3/SDL.h>
 #include <backends/imgui_impl_sdl3.h>
@@ -46,34 +47,33 @@ std::shared_ptr<spdlog::logger>& getLogger()
 
 bool mainMenuUpdateGUI(float frameDelta)
 {
-	auto* world = world::World::get();
 
 	if(ImGui::Button("Gen 8x8 world"))
 	{
-		world->create(8, 16);
+		scenes::sceneWorld_Init(8, 16);
 		return true;
 	}
 
 	if(ImGui::Button("Gen 16x16 world"))
 	{
-		world->create(16, 16);
+		scenes::sceneWorld_Init(16, 16);
 		return true;
 	}
 
 	if(ImGui::Button("Gen 32x32 world"))
 	{
-		world->create(32, 16);
+		scenes::sceneWorld_Init(32, 16);
 		return true;
 	}
 
 	if(ImGui::Button("Gen 64x64 world"))
 	{
-		world->create(64, 16);
+		scenes::sceneWorld_Init(64, 16);
 		return true;
 	}
 	if(ImGui::Button("Gen 128x128 world"))
 	{
-		world->create(128, 16);
+		scenes::sceneWorld_Init(128, 16);
 		return true;
 	}
 	return false;
@@ -92,16 +92,15 @@ std::atomic<bool> running;
 constexpr uint32_t TICKS_PER_SECOND = 50;
 constexpr float PHYSIQS_DELTA = 1.f / TICKS_PER_SECOND;
 
-void physiqsThread()
+void fixedLoop()
 {
-	auto* world = world::World::get();
 	auto delta = SDL_GetTicks();
 	while(running)
 	{
 
 		if(sceneState == SCENE_STATE_WORLD)
 		{
-			world->updatePhysiqs(PHYSIQS_DELTA);
+			scenes::sceneWorld_FixedUpdate();
 		}
 
 		auto elapsed = SDL_GetTicks() - delta;
@@ -120,9 +119,6 @@ int main(int argc, char** argv)
 	auto* inputData = InputData::get();
 	inputData->reset();
 	auto inputMap = getInputMap();
-
-	// Init world
-	auto* world = world::World::get();
 
 	System system{};
 
@@ -144,7 +140,7 @@ int main(int argc, char** argv)
 	running = true;
 	auto ticks = SDL_GetTicks();
 
-	render::RenderSate renderState{};
+	render::RenderState renderState{};
 	renderState.camera.fov = 45;
 	renderState.camera.aspect = 1920.f / 1080.f;
 	renderState.camera.position = glm::vec3(50, 20, 50);
@@ -155,7 +151,7 @@ int main(int argc, char** argv)
 
 	sceneState = SCENE_STATE_MAINMENU;
 
-	std::thread pthread(physiqsThread);
+	std::thread pthread(fixedLoop);
 
 	bool prevCaptureMouse = inputData->captureMouse;
 	while(running)
@@ -234,10 +230,10 @@ int main(int argc, char** argv)
 		}
 		else if(sceneState == SCENE_STATE_WORLD)
 		{
-			if(world->drawGui())
+			if(scenes::sceneWorld_DrawGUI())
 			{
 				sceneState = SCENE_STATE_MAINMENU;
-				world->clear();
+				scenes::sceneWorld_Finish();
 				renderer->worldRenderer.clearWorld();
 			}
 		}
@@ -246,13 +242,8 @@ int main(int argc, char** argv)
 
 		if(sceneState == SCENE_STATE_WORLD)
 		{
-			world->update(deltaTime);
+			scenes::sceneWorld_Update(deltaTime, renderState);
 		}
-
-		renderState.camera.position =
-			world->player.body.position + world->player.body.size + glm::vec3(0.f, -0.3f, 0.f);
-		renderState.camera.forward = world->player.forward;
-		renderState.cullCamera = renderState.camera;
 
 		renderer->renderFrame(renderState);
 

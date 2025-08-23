@@ -3,6 +3,7 @@ file(GLOB_RECURSE SRC
      "utils/*.cpp"
      "rendering/*.cpp"
      "vk/*.cpp"
+     "scenes/*.cpp"
      "platform/linux/*.cpp"
 )
 

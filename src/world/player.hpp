@@ -32,7 +32,7 @@ struct Player
 	void move(glm::vec3 delta);
 
 	void update(float deltaTime);
-	void updatePhysiqs(float deltaTime);
+	void fixedUpdate();
 };
 } // namespace world
 } // namespace vblck
