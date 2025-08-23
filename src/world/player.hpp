@@ -14,11 +14,15 @@ struct Player
 {
 	collisions::AABB body;
 	glm::vec3 forward;
-
 	glm::vec3 velocity;
 
 	float moveSpeed = 4;
 	float jump = 8;
+	float grounded = false;
+
+	bool doJump = false;
+
+	glm::vec3 moveInput;
 
 	void init();
 
@@ -28,6 +32,7 @@ struct Player
 	void move(glm::vec3 delta);
 
 	void update(float deltaTime);
+	void updatePhysiqs(float deltaTime);
 };
 } // namespace world
 } // namespace vblck

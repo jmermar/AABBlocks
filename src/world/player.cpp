@@ -36,18 +36,27 @@ void Player::rotateX(float degrees)
 }
 void Player::move(glm::vec3 delta)
 {
-	body.position.y += collisions::moveY(body, delta.y);
+	grounded = false;
+	if(delta.y < 0)
+	{
+		auto res = collisions::moveY(body, delta.y);
+		if(res > delta.y + 0.0001)
+		{
+			grounded = true;
+			velocity.y = 0;
+		}
+		body.position.y += res;
+	}
+	else
+	{
+		body.position.y += collisions::moveY(body, delta.y);
+	}
+
 	body.position.x += collisions::moveX(body, delta.x);
 	body.position.z += collisions::moveZ(body, delta.z);
 }
 void Player::update(float deltaTime)
 {
-	auto world = World::get();
-	velocity.x = 0;
-	velocity.z = 0;
-
-	velocity.y = std::max(-world->physicsData.maxFallSpeed,
-						  velocity.y + world->physicsData.gravity * deltaTime);
 
 	rotateY(InputData::getAxis().x);
 	rotateX(-InputData::getAxis().y);
@@ -57,30 +66,51 @@ void Player::update(float deltaTime)
 	forward = glm::normalize(forward);
 
 	auto right = glm::cross(glm::vec3(0, 1, 0), forward);
+	glm::vec3 moveInput = glm::vec3(0);
 
 	if(InputData::isDown(INPUT_MOVE_FORWARD))
 	{
-		velocity += forward * moveSpeed;
+		moveInput += forward;
 	}
 	if(InputData::isDown(INPUT_MOVE_BACKWARD))
 	{
-		velocity -= forward * moveSpeed;
+		moveInput -= forward;
 	}
 	if(InputData::isDown(INPUT_MOVE_LEFT))
 	{
-		velocity -= right * moveSpeed;
+		moveInput -= right;
 	}
 	if(InputData::isDown(INPUT_MOVE_RIGHT))
 	{
-		velocity += right * moveSpeed;
+		moveInput += right;
 	}
 
-	if(InputData::isPressed(INPUT_JUMP))
+	if(InputData::isDown(INPUT_JUMP) && grounded)
 	{
+		doJump = true;
+	}
+
+	if(glm::length(moveInput) > 0.2)
+	{
+		this->moveInput = moveInput;
+	}
+}
+
+void Player::updatePhysiqs(float dt)
+{
+	if(doJump)
+	{
+		doJump = false;
 		velocity.y = jump;
 	}
 
-	move(velocity * deltaTime);
+	auto world = World::get();
+	velocity.x = moveInput.x * moveSpeed;
+	velocity.z = moveInput.z * moveSpeed;
+	velocity.y =
+		std::max(-world->physicsData.maxFallSpeed, velocity.y + world->physicsData.gravity * dt);
+	move(velocity * dt);
+	moveInput = glm::vec3(0);
 }
 } // namespace world
 } // namespace vblck

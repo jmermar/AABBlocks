@@ -1,0 +1,2 @@
+add_library(vma_static STATIC vk_mem_alloc.cpp)
+target_include_directories(vma_static PUBLIC include)

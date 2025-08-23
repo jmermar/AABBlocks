@@ -51,7 +51,7 @@ struct World
 	struct
 	{
 		float gravity = -19.6;
-		float maxFallSpeed = 32;
+		float maxFallSpeed = 16;
 	} physicsData;
 
 	uint32_t worldSize{}, worldHeight{};
@@ -64,6 +64,7 @@ struct World
 
 	std::atomic<bool> loaded;
 	std::atomic<float> progress;
+	std::thread physicsThread;
 
 	inline Chunk* chunkAt(int32_t cx, int32_t cy, int32_t cz)
 	{
@@ -91,8 +92,10 @@ struct World
 	void generateChunkMeshes();
 
 	void create(uint32_t worldSize, uint32_t worldHeight);
+	void destroy();
 
 	void update(float deltaTime);
+	void updatePhysiqs(float deltaTime);
 
 	bool drawGui();
 

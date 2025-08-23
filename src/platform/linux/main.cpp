@@ -10,6 +10,7 @@
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/matrix.hpp>
+#include <thread>
 using namespace vblck;
 
 std::shared_ptr<spdlog::logger> logger;
@@ -84,6 +85,34 @@ enum SceneState
 	SCENE_STATE_WORLD
 };
 
+std::atomic<SceneState> sceneState;
+
+std::atomic<bool> running;
+
+constexpr uint32_t TICKS_PER_SECOND = 50;
+constexpr float PHYSIQS_DELTA = 1.f / TICKS_PER_SECOND;
+
+void physiqsThread()
+{
+	auto* world = world::World::get();
+	auto delta = SDL_GetTicks();
+	while(running)
+	{
+
+		if(sceneState == SCENE_STATE_WORLD)
+		{
+			world->updatePhysiqs(PHYSIQS_DELTA);
+		}
+
+		auto elapsed = SDL_GetTicks() - delta;
+		if(elapsed < 1000 / 50)
+		{
+			SDL_Delay((1000 / 50) - elapsed);
+		}
+		delta = SDL_GetTicks();
+	}
+}
+
 int main(int argc, char** argv)
 {
 	logger = spdlog::stdout_color_mt("VKP");
@@ -112,7 +141,7 @@ int main(int argc, char** argv)
 										  1920,
 										  1080);
 
-	bool running = true;
+	running = true;
 	auto ticks = SDL_GetTicks();
 
 	render::RenderSate renderState{};
@@ -124,14 +153,15 @@ int main(int argc, char** argv)
 	uint64_t frameDelta = 0;
 	float deltaTime = 0;
 
-	SceneState sceneState = SCENE_STATE_MAINMENU;
+	sceneState = SCENE_STATE_MAINMENU;
+
+	std::thread pthread(physiqsThread);
 
 	bool prevCaptureMouse = inputData->captureMouse;
 	while(running)
 	{
 		if(prevCaptureMouse != inputData->captureMouse)
 		{
-			SDL_SetWindowRelativeMouseMode(system.window, inputData->captureMouse);
 			prevCaptureMouse = inputData->captureMouse;
 		}
 		inputData->axis = glm::vec2(0);
@@ -230,6 +260,8 @@ int main(int argc, char** argv)
 		ticks = SDL_GetTicks();
 		deltaTime = frameDelta / 1000.f;
 	}
+	pthread.join();
+
 	delete renderer;
 
 	finishImgui(system, imguiInstance);

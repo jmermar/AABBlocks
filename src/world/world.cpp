@@ -97,7 +97,15 @@ void World::update(float deltaTime)
 	{
 		return;
 	}
-	updatePlayer(deltaTime);
+	player.update(deltaTime);
+}
+void World::updatePhysiqs(float deltaTime)
+{
+	if(!loaded)
+	{
+		return;
+	}
+	player.updatePhysiqs(deltaTime);
 }
 bool World::drawGui()
 {
