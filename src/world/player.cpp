@@ -57,7 +57,7 @@ void Player::move(glm::vec3 delta)
 }
 void Player::update(float deltaTime)
 {
-
+	auto* world = world::World::get();
 	rotateY(InputData::getAxis().x);
 	rotateX(-InputData::getAxis().y);
 
@@ -88,6 +88,14 @@ void Player::update(float deltaTime)
 	if(InputData::isDown(INPUT_JUMP) && grounded)
 	{
 		doJump = true;
+	}
+
+	if(InputData::isPressed(INPUT_CROUCH))
+	{
+		world->setBlock(((int32_t)body.position.x),
+						((int32_t)body.position.y),
+						((int32_t)body.position.z + 2),
+						1);
 	}
 
 	if(glm::length(moveInput) > 0.2)

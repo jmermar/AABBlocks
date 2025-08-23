@@ -79,5 +79,10 @@ const BlockData* Chunk::getBlock(int32_t x, int32_t y, int32_t z)
 
 	return world->blockDatabase.getBlockFromId(blocks[z][y][x]);
 }
+uint64_t Chunk::getID()
+{
+	auto* world = World::get();
+	return cx * world->worldSize * world->worldSize + cz * world->worldSize + cy;
+}
 } // namespace world
 } // namespace vblck

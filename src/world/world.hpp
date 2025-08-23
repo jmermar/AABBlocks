@@ -7,6 +7,7 @@
 #include <memory>
 #include <thread>
 #include <unordered_map>
+#include <unordered_set>
 namespace vblck
 {
 namespace world
@@ -58,6 +59,7 @@ struct World
 	BlockDatabase blockDatabase;
 	std::vector<Chunk> chunks;
 
+	std::unordered_map<uint64_t, Chunk*> dirtyChunks;
 	std::vector<ChunkGenerateCommand> chunkGenerateCommands;
 
 	inline Chunk* chunkAt(int32_t cx, int32_t cy, int32_t cz)
@@ -82,6 +84,8 @@ struct World
 
 		return blockDatabase.getBlockFromId(chunk->blocks[z][y][x]);
 	}
+
+	void setBlock(int32_t x, int32_t y, int32_t z, uint32_t id);
 
 	void generateChunkMeshes();
 
