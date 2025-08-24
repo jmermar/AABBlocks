@@ -1,6 +1,7 @@
 #include "init.hpp"
 #include "init_imgui.hpp"
 #include "input.hpp"
+#include "input_imp.hpp"
 #include "rendering/renderer.hpp"
 #include "scenes/scene_world.hpp"
 #include "world/world.hpp"
@@ -15,26 +16,6 @@
 using namespace vblck;
 
 std::shared_ptr<spdlog::logger> logger;
-
-std::pair<SDL_Scancode, InputEvents> INPUT_MAP[INPUT_NUMBER] = {
-	{SDL_SCANCODE_W, INPUT_MOVE_FORWARD},
-	{SDL_SCANCODE_S, INPUT_MOVE_BACKWARD},
-	{SDL_SCANCODE_A, INPUT_MOVE_LEFT},
-	{SDL_SCANCODE_D, INPUT_MOVE_RIGHT},
-	{SDL_SCANCODE_SPACE, INPUT_JUMP},
-	{SDL_SCANCODE_LSHIFT, INPUT_CROUCH},
-	{SDL_SCANCODE_ESCAPE, INPUT_MENU}};
-
-std::unordered_map<SDL_Scancode, InputEvents> getInputMap()
-{
-	std::unordered_map<SDL_Scancode, InputEvents> map;
-	for(int i = 0; i < INPUT_NUMBER; i++)
-	{
-		map[INPUT_MAP[i].first] = INPUT_MAP[i].second;
-	}
-
-	return map;
-}
 
 namespace vblck
 {
@@ -115,18 +96,13 @@ void fixedLoop()
 int main(int argc, char** argv)
 {
 	logger = spdlog::stdout_color_mt("VKP");
-	// Init input
-	auto* inputData = InputData::get();
-	inputData->reset();
-	auto inputMap = getInputMap();
 
 	System system{};
 
 	system = initSystemLinux("Vulkan App", 1920, 1080);
 	auto imguiInstance = initImgui(system);
 
-	SDL_SetWindowRelativeMouseMode(system.window, false);
-	inputData->captureMouse = false;
+	uint32_t w = 1920, h = 1080;
 
 	auto* renderer = new render::Renderer(system.instance,
 										  system.chosenGPU,
@@ -134,11 +110,13 @@ int main(int argc, char** argv)
 										  system.surface,
 										  system.graphicsQueue,
 										  system.graphicsQueueFamily,
-										  1920,
-										  1080);
+										  w,
+										  h);
 
 	running = true;
 	auto ticks = SDL_GetTicks();
+
+	input_Init(system.window);
 
 	render::RenderState renderState{};
 	renderState.camera.fov = 45;
@@ -153,21 +131,9 @@ int main(int argc, char** argv)
 
 	std::thread pthread(fixedLoop);
 
-	bool prevCaptureMouse = inputData->captureMouse;
 	while(running)
 	{
-		if(prevCaptureMouse != inputData->captureMouse)
-		{
-			prevCaptureMouse = inputData->captureMouse;
-		}
-		inputData->axis = glm::vec2(0);
-		for(int i = 0; i < INPUT_NUMBER; i++)
-		{
-			if(inputData->press[i])
-			{
-				inputData->pressed[i] = false;
-			}
-		}
+		input_Update(system.window, w, h);
 		SDL_Event e;
 		while(SDL_PollEvent(&e))
 		{
@@ -177,41 +143,16 @@ int main(int argc, char** argv)
 				running = false;
 				break;
 			case SDL_EVENT_WINDOW_RESIZED: {
-				auto w = e.window.data1;
-				auto h = e.window.data2;
+				auto iw = e.window.data1;
+				auto ih = e.window.data2;
 				renderer->recreateSwapchain(w, h);
+				w = (uint32_t)iw;
+				h = (uint32_t)ih;
 				renderState.camera.aspect = (float)w / (float)h;
 			}
 			break;
-			case SDL_EVENT_KEY_DOWN:
-				if(inputMap.contains(e.key.scancode))
-				{
-					auto event = inputMap[e.key.scancode];
-					if(!InputData::isDown(event))
-					{
-						inputData->press[event] = inputData->pressed[event] = true;
-						inputData->released[event] = false;
-					}
-				}
-				break;
-			case SDL_EVENT_KEY_UP:
-				if(inputMap.contains(e.key.scancode))
-				{
-					auto event = inputMap[e.key.scancode];
-					inputData->press[event] = inputData->pressed[event] = false;
-					inputData->released[event] = true;
-				}
-				break;
-			case SDL_EVENT_MOUSE_MOTION:
-				if(inputData->captureMouse)
-				{
-					int dx = e.motion.xrel;
-					int dy = e.motion.yrel;
-					inputData->axis.x = dx / 50.f;
-					inputData->axis.y = dy / 50.f;
-				}
-				break;
 			}
+			input_Event(system.window, e);
 			ImGui_ImplSDL3_ProcessEvent(&e);
 		}
 

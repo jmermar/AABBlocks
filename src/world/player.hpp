@@ -15,6 +15,7 @@ struct Player
 	collisions::AABB body;
 	glm::vec3 forward;
 	glm::vec3 velocity;
+	glm::vec3 eye;
 
 	float moveSpeed = 4;
 	float jump = 8;

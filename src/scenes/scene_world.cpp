@@ -16,7 +16,8 @@ struct SceneData
 void sceneWorld_Init(uint32_t worldSize, uint32_t worldHeight)
 {
 	scene.player.init();
-
+	scene.player.body.position = glm::vec3(1, 0, 1) * (float)(worldSize * 0.5f * world::CHUNK_SIZE);
+	scene.player.body.position.y = 50;
 	scene.worldGenerator.baseAmplitude = 20;
 	scene.worldGenerator.baseHeight = 16;
 	scene.worldGenerator.sandLevel = 25;
@@ -37,8 +38,7 @@ void sceneWorld_Update(float deltaTime, render::RenderState& renderState)
 	world->update(deltaTime);
 	scene.player.update(deltaTime);
 
-	renderState.camera.position =
-		scene.player.body.position + scene.player.body.size + glm::vec3(0.f, -0.3f, 0.f);
+	renderState.camera.position = scene.player.body.position + scene.player.eye;
 	renderState.camera.forward = scene.player.forward;
 	renderState.cullCamera = renderState.camera;
 }

@@ -14,7 +14,11 @@ constexpr uint32_t SAND_LEVEL = 30;
 
 void World::setBlock(int32_t x, int32_t y, int32_t z, uint32_t id)
 {
-	auto* chunk = chunkAt(x / CHUNK_SIZE, y / CHUNK_SIZE, z / CHUNK_SIZE);
+	auto cx = x / CHUNK_SIZE;
+	auto cy = y / CHUNK_SIZE;
+	auto cz = z / CHUNK_SIZE;
+
+	auto* chunk = chunkAt(cx, cy, cz);
 	if(!chunk)
 		return;
 
@@ -24,6 +28,58 @@ void World::setBlock(int32_t x, int32_t y, int32_t z, uint32_t id)
 
 	chunk->blocks[z][y][x] = id;
 	dirtyChunks[chunk->getID()] = chunk;
+
+	if(x == 0)
+	{
+		auto* chunk = chunkAt(cx - 1, cy, cz);
+		if(chunk)
+		{
+			dirtyChunks[chunk->getID()] = chunk;
+		}
+	}
+	if(y == 0)
+	{
+		auto* chunk = chunkAt(cx, cy - 1, cz);
+		if(chunk)
+		{
+			dirtyChunks[chunk->getID()] = chunk;
+		}
+	}
+	if(z == 0)
+	{
+		auto* chunk = chunkAt(cx, cy, cz - 1);
+		if(chunk)
+		{
+			dirtyChunks[chunk->getID()] = chunk;
+		}
+	}
+
+	if(x == CHUNK_SIZE - 1)
+	{
+		auto* chunk = chunkAt(cx + 1, cy, cz);
+		if(chunk)
+		{
+			dirtyChunks[chunk->getID()] = chunk;
+		}
+	}
+
+	if(y == CHUNK_SIZE - 1)
+	{
+		auto* chunk = chunkAt(cx, cy + 1, cz);
+		if(chunk)
+		{
+			dirtyChunks[chunk->getID()] = chunk;
+		}
+	}
+
+	if(z == CHUNK_SIZE - 1)
+	{
+		auto* chunk = chunkAt(cx, cy, cz + 1);
+		if(chunk)
+		{
+			dirtyChunks[chunk->getID()] = chunk;
+		}
+	}
 }
 
 void World::generateChunkMeshes()
@@ -37,13 +93,18 @@ void World::generateChunkMeshes()
 		{
 			renderer->worldRenderer.chunkRenderer.deleteChunk(c->meshData);
 		}
-		cmd.position = glm::vec3(c->cx, c->cy, c->cz) * (float)CHUNK_SIZE;
-		chunkGenerateCommands.push_back(cmd);
+		if(cmd.data.size() > 0)
+		{
+			cmd.position = glm::vec3(c->cx, c->cy, c->cz) * (float)CHUNK_SIZE;
+			cmd.chunk = c;
+			chunkGenerateCommands.push_back(cmd);
+		}
 	}
 	dirtyChunks.clear();
 	for(auto& cmd : chunkGenerateCommands)
 	{
-		renderer->worldRenderer.chunkRenderer.loadChunk(cmd.position, cmd.data);
+		cmd.chunk->meshData =
+			renderer->worldRenderer.chunkRenderer.loadChunk(cmd.position, cmd.data);
 	}
 	if(chunkGenerateCommands.size() > 0)
 	{

@@ -124,6 +124,7 @@ void WorldGenerator::generateChunkData()
 				auto* chunk = world->chunkAt(cx, cy, cz);
 				ChunkGenerateCommand genCmd{};
 				genCmd.data = chunk->generateChunkData();
+				genCmd.chunk = chunk;
 				if(genCmd.data.size() > 0)
 				{
 					genCmd.position = glm::vec3(cx, cy, cz) * (float)CHUNK_SIZE;

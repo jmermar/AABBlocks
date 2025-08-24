@@ -21,7 +21,7 @@ inline int discretizeFloat(float a)
 	return -discretizeFloat(-a);
 }
 
-AABBOverlapResult overlaps(const AABB& aabb)
+AABBOverlapResult overlaps(const AABB& aabb, const AABB* ignore)
 {
 	auto* world = world::World::get();
 	int minx = discretizeFloat(aabb.min().x);
@@ -36,7 +36,8 @@ AABBOverlapResult overlaps(const AABB& aabb)
 	overlapResult.max = aabb.max();
 	overlapResult.min = aabb.min();
 	overlapResult.colision = false;
-
+	AABB box;
+	box.size = glm::vec3(1);
 	for(int z = minz; z <= maxz; z++)
 	{
 		for(int x = minx; x <= maxx; x++)
@@ -44,7 +45,8 @@ AABBOverlapResult overlaps(const AABB& aabb)
 			for(int y = miny; y <= maxy; y++)
 			{
 				auto* block = world->getBlock(x, y, z);
-				if(block && block->solid)
+				box.position = glm::vec3(x, y, z);
+				if(block && block->solid && !(ignore && ignore->intersects(box)))
 				{
 					overlapResult.colision = true;
 					overlapResult.min.x = std::min(overlapResult.min.x, (float)x);
@@ -62,14 +64,14 @@ AABBOverlapResult overlaps(const AABB& aabb)
 	return overlapResult;
 }
 
-float moveX(const AABB& aabb, float distance)
+float moveX(const AABB& aabb, float distance, const AABB* ignore)
 {
 	if(std::abs(distance) < 0.001)
 		return 0;
 	auto dest = aabb;
 	dest.position.x += distance;
 
-	auto ovResult = overlaps(dest);
+	auto ovResult = overlaps(dest, ignore);
 	if(!ovResult.colision)
 	{
 		return distance;
@@ -92,14 +94,14 @@ float moveX(const AABB& aabb, float distance)
 	}
 	return 0;
 }
-float moveY(const AABB& aabb, float distance)
+float moveY(const AABB& aabb, float distance, const AABB* ignore)
 {
 	if(std::abs(distance) < 0.001)
 		return 0;
 	auto dest = aabb;
 	dest.position.y += distance;
 
-	auto ovResult = overlaps(dest);
+	auto ovResult = overlaps(dest, ignore);
 	if(!ovResult.colision)
 	{
 		return distance;
@@ -123,14 +125,14 @@ float moveY(const AABB& aabb, float distance)
 	return 0;
 }
 
-float moveZ(const AABB& aabb, float distance)
+float moveZ(const AABB& aabb, float distance, const AABB* ignore)
 {
 	if(std::abs(distance) < 0.001)
 		return 0;
 	auto dest = aabb;
 	dest.position.z += distance;
 
-	auto ovResult = overlaps(dest);
+	auto ovResult = overlaps(dest, ignore);
 	if(!ovResult.colision)
 	{
 		return distance;

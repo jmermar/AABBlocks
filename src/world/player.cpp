@@ -12,9 +12,9 @@ namespace world
 {
 void Player::init()
 {
-	body.position = glm::vec3(1, 0, 1) * (float)(World::get()->worldSize * 0.5f * CHUNK_SIZE);
+	body.position = glm::vec3(0);
 	body.size = glm::vec3(0.8f, 1.8f, 0.8f);
-	body.position.y = 50;
+	eye = glm::vec3(0.4f, 1.6f, 0.4f);
 	forward = glm::vec3(0, 0, 1);
 }
 void Player::rotateY(float degrees)
@@ -39,7 +39,7 @@ void Player::move(glm::vec3 delta)
 	grounded = false;
 	if(delta.y < 0)
 	{
-		auto res = collisions::moveY(body, delta.y);
+		auto res = collisions::moveY(body, delta.y, &body);
 		if(res > delta.y + 0.0001)
 		{
 			grounded = true;
@@ -49,11 +49,11 @@ void Player::move(glm::vec3 delta)
 	}
 	else
 	{
-		body.position.y += collisions::moveY(body, delta.y);
+		body.position.y += collisions::moveY(body, delta.y, &body);
 	}
 
-	body.position.x += collisions::moveX(body, delta.x);
-	body.position.z += collisions::moveZ(body, delta.z);
+	body.position.x += collisions::moveX(body, delta.x, &body);
+	body.position.z += collisions::moveZ(body, delta.z, &body);
 }
 void Player::update(float deltaTime)
 {
@@ -90,12 +90,26 @@ void Player::update(float deltaTime)
 		doJump = true;
 	}
 
-	if(InputData::isPressed(INPUT_CROUCH))
+	if(InputData::isPressed(INPUT_PRIMARY_ACTION))
 	{
-		world->setBlock(((int32_t)body.position.x),
-						((int32_t)body.position.y),
-						((int32_t)body.position.z + 2),
-						1);
+		auto res = collisions::raycast(body.position + eye, this->forward, 6);
+		if(res.block)
+		{
+			world->setBlock(
+				(int32_t)res.hitpoint.x, (int32_t)res.hitpoint.y, (int32_t)res.hitpoint.z, 0);
+		}
+	}
+
+	if(InputData::isPressed(INPUT_SECONDARY_ACTION))
+	{
+		auto res = collisions::raycast(body.position + eye, this->forward, 6);
+		if(res.block)
+		{
+			int32_t bx = (int32_t)(res.hitpoint.x + res.norm.x);
+			int32_t by = (int32_t)(res.hitpoint.y + res.norm.y);
+			int32_t bz = (int32_t)(res.hitpoint.z + res.norm.z);
+			world->setBlock(bx, by, bz, 2);
+		}
 	}
 
 	if(glm::length(moveInput) > 0.2)

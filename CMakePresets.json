@@ -7,8 +7,8 @@
     "configurePresets": [
         {
             "name": "make",
-            "displayName": "Make (Release)",
-            "generator": "Unix Makefiles",
+            "displayName": "Ninja (Release)",
+            "generator": "Ninja",
             "binaryDir": "${sourceDir}/build/release",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release"
@@ -16,8 +16,8 @@
         },
         {
             "name": "make debug",
-            "displayName": "Make (Debug)",
-            "generator": "Unix Makefiles",
+            "displayName": "Ninja (Debug)",
+            "generator": "Ninja",
             "binaryDir": "${sourceDir}/build/debug",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug"
