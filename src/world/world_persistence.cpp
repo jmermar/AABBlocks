@@ -33,7 +33,7 @@ void loadChunk(const SQLite::Database& db, uint32_t x, uint32_t y, uint32_t z)
 	query.bind(1, x);
 	query.bind(2, y);
 	query.bind(3, z);
-
+	auto* chunk = World::get()->chunkAt(x, y, z);
 	if(query.executeStep())
 	{
 		const void* blob = query.getColumn("block_data").getBlob();
@@ -44,10 +44,12 @@ void loadChunk(const SQLite::Database& db, uint32_t x, uint32_t y, uint32_t z)
 			std::abort();
 		}
 
-		auto* chunk = World::get()->chunkAt(x, y, z);
-
 		memcpy(chunk->blocks.data(), blob, CHUNK_MEMORY_SIZE);
 		chunk->dirty = true;
+	}
+	else
+	{
+		memset(chunk->blocks.data(), 0, CHUNK_MEMORY_SIZE);
 	}
 }
 void saveWorld(const std::string& worldName)

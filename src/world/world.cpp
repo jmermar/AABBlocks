@@ -119,6 +119,19 @@ void World::create(uint32_t worldSize, uint32_t worldHeight)
 	this->worldHeight = worldHeight;
 	this->worldSize = worldSize;
 	chunks.resize(worldSize * worldSize * worldHeight);
+	for(uint32_t cx = 0; cx < worldSize; cx++)
+	{
+		for(uint32_t cz = 0; cz < worldSize; cz++)
+		{
+			for(uint32_t cy = 0; cy < worldHeight; cy++)
+			{
+				auto* chunk = chunkAt(cx, cy, cz);
+				chunk->cx = cx;
+				chunk->cy = cy;
+				chunk->cz = cz;
+			}
+		}
+	}
 }
 void World::update(float deltaTime)
 {

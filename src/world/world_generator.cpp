@@ -106,8 +106,8 @@ void WorldGenerator::generateWorld()
 			world->create(world_size, world_height);
 			initBlockIds();
 			generateSolids();
-			generateChunkData();
 		}
+		generateChunkData();
 		finished = true;
 	});
 	t.detach();
