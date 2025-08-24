@@ -53,6 +53,18 @@ void input_Update(SDL_Window* window, uint32_t w, uint32_t h)
 	}
 }
 
+void inputSetDown(InputEvents event)
+{
+	inputData->press[event] = inputData->pressed[event] = true;
+	inputData->released[event] = false;
+}
+
+void inputSetUp(InputEvents event)
+{
+	inputData->press[event] = inputData->pressed[event] = false;
+	inputData->released[event] = true;
+}
+
 void input_Event(SDL_Window* window, SDL_Event e)
 {
 	switch(e.type)
@@ -64,8 +76,7 @@ void input_Event(SDL_Window* window, SDL_Event e)
 			auto event = mouseInputMap[e.button.button];
 			if(!InputData::isDown(event))
 			{
-				inputData->press[event] = inputData->pressed[event] = true;
-				inputData->released[event] = false;
+				inputSetDown(event);
 			}
 		}
 		break;
@@ -73,8 +84,17 @@ void input_Event(SDL_Window* window, SDL_Event e)
 		if(mouseInputMap.contains(e.button.button))
 		{
 			auto event = mouseInputMap[e.button.button];
-			inputData->press[event] = inputData->pressed[event] = false;
-			inputData->released[event] = true;
+			inputSetUp(event);
+		}
+		break;
+	case SDL_EVENT_MOUSE_WHEEL:
+		if(e.wheel.y > 0)
+		{
+			inputSetDown(INPUT_SELECT_UP);
+		}
+		else if(e.wheel.y < 0)
+		{
+			inputSetDown(INPUT_SELECT_DOWN);
 		}
 		break;
 	case SDL_EVENT_KEY_DOWN:
@@ -83,8 +103,7 @@ void input_Event(SDL_Window* window, SDL_Event e)
 			auto event = inputMap[e.key.scancode];
 			if(!InputData::isDown(event))
 			{
-				inputData->press[event] = inputData->pressed[event] = true;
-				inputData->released[event] = false;
+				inputSetDown(event);
 			}
 		}
 		break;
@@ -92,8 +111,7 @@ void input_Event(SDL_Window* window, SDL_Event e)
 		if(inputMap.contains(e.key.scancode))
 		{
 			auto event = inputMap[e.key.scancode];
-			inputData->press[event] = inputData->pressed[event] = false;
-			inputData->released[event] = true;
+			inputSetUp(event);
 		}
 		break;
 	case SDL_EVENT_MOUSE_MOTION:

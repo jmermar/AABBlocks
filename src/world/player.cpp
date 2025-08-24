@@ -6,6 +6,7 @@
 #include <glm/matrix.hpp>
 
 #include "input.hpp"
+#include "scenes/scene_world.hpp"
 namespace vblck
 {
 namespace world
@@ -57,6 +58,7 @@ void Player::move(glm::vec3 delta)
 }
 void Player::update(float deltaTime)
 {
+	auto* ui = &scenes::sceneWorld_getData()->ui;
 	auto* world = world::World::get();
 	rotateY(InputData::getAxis().x);
 	rotateX(-InputData::getAxis().y);
@@ -108,7 +110,7 @@ void Player::update(float deltaTime)
 			int32_t bx = (int32_t)(res.hitpoint.x + res.norm.x);
 			int32_t by = (int32_t)(res.hitpoint.y + res.norm.y);
 			int32_t bz = (int32_t)(res.hitpoint.z + res.norm.z);
-			world->setBlock(bx, by, bz, 2);
+			world->setBlock(bx, by, bz, ui->blockSelect.currentSelect);
 		}
 	}
 
