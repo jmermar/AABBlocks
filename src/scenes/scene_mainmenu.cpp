@@ -18,11 +18,38 @@ struct State
 	std::vector<std::string> worlds;
 } sceneState;
 
-void loadWorlds() { }
+void loadWorlds()
+{
+	sceneState.worlds.clear();
+	for(auto& f : listFilesInFolder("worlds/"))
+	{
+		if(f.size() >= 8)
+		{
+			auto ext = f.substr(f.size() - 8);
+			auto name = f.substr(0, f.size() - 8);
+			if(ext == std::string(".sqlite3"))
+			{
+				sceneState.worlds.push_back(name);
+			}
+		}
+	}
+}
+
+bool nameRepeated(const std::string& name)
+{
+	for(auto& n : sceneState.worlds)
+	{
+		if(name == n)
+			return true;
+	}
+	return false;
+}
 void sceneMainmenu_Init()
 {
 	sceneState.state = MAIN;
+	loadWorlds();
 }
+
 void sceneMainmenu_Finish() { }
 bool sceneMainmenu_DrawUI()
 {
@@ -41,34 +68,43 @@ bool sceneMainmenu_DrawUI()
 	{
 		static char str0[128] = "Enter world name";
 		ImGui::InputText("World name", str0, 128);
-		GameData::get()->world.name = std::string(str0);
-		if(ImGui::Button("Gen 8x8 world"))
-		{
-			scenes::sceneWorld_InitNewWorld(8, 16);
-			return true;
-		}
+		auto name = std::string(str0);
 
-		if(ImGui::Button("Gen 16x16 world"))
+		if(nameRepeated(name))
 		{
-			scenes::sceneWorld_InitNewWorld(16, 16);
-			return true;
+			ImGui::Text("A world with that name already exists.");
 		}
+		else
+		{
+			GameData::get()->world.name = name;
+			if(ImGui::Button("Gen 8x8 world"))
+			{
+				scenes::sceneWorld_InitNewWorld(8, 16);
+				return true;
+			}
 
-		if(ImGui::Button("Gen 32x32 world"))
-		{
-			scenes::sceneWorld_InitNewWorld(32, 16);
-			return true;
-		}
+			if(ImGui::Button("Gen 16x16 world"))
+			{
+				scenes::sceneWorld_InitNewWorld(16, 16);
+				return true;
+			}
 
-		if(ImGui::Button("Gen 64x64 world"))
-		{
-			scenes::sceneWorld_InitNewWorld(64, 16);
-			return true;
-		}
-		if(ImGui::Button("Gen 128x128 world"))
-		{
-			scenes::sceneWorld_InitNewWorld(128, 16);
-			return true;
+			if(ImGui::Button("Gen 32x32 world"))
+			{
+				scenes::sceneWorld_InitNewWorld(32, 16);
+				return true;
+			}
+
+			if(ImGui::Button("Gen 64x64 world"))
+			{
+				scenes::sceneWorld_InitNewWorld(64, 16);
+				return true;
+			}
+			if(ImGui::Button("Gen 128x128 world"))
+			{
+				scenes::sceneWorld_InitNewWorld(128, 16);
+				return true;
+			}
 		}
 
 		if(ImGui::Button("Return"))
@@ -78,13 +114,14 @@ bool sceneMainmenu_DrawUI()
 	}
 	else if(sceneState.state == LOAD_WORLD)
 	{
-		static char str0[128] = "Enter world name";
-		ImGui::InputText("World name", str0, 128);
-
-		if(ImGui::Button("Load"))
+		for(auto& name : sceneState.worlds)
 		{
-			scenes::sceneWorld_LoadWorld(std::string(str0));
-			return true;
+			std::string text = "World: \"" + name + "\"";
+			if(ImGui::Button(text.c_str()))
+			{
+				scenes::sceneWorld_LoadWorld(name);
+				return true;
+			}
 		}
 
 		if(ImGui::Button("Return"))

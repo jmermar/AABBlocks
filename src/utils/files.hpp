@@ -23,6 +23,7 @@ ImageArrayData readImageArrayFromFile(const std::string& path, uint32_t ncols, u
 
 bool fileExists(const std::string& path);
 void createDirIfNotExists(const std::string& path);
+std::vector<std::string> listFilesInFolder(const std::string& path);
 
 std::vector<uint8_t> loadBinaryFile(const std::string& path);
 std::string loadTextFile(const std::string& path);

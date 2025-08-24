@@ -39,7 +39,7 @@ struct Camera
 	glm::vec3 forward{};
 	float aspect = 1;
 	float znear = 0.01f;
-	float zfar = 10000.f;
+	float zfar = 500.f;
 	float fov = 45.f;
 
 	glm::mat4 getProjection();

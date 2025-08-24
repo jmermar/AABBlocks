@@ -38,7 +38,6 @@ void onLoad()
 void sceneWorld_Finish()
 {
 	scene.loaded = false;
-	world::persistence::saveWorld(GameData::get()->world.name);
 }
 
 void sceneWorld_Update(float deltaTime, render::RenderState& renderState)
@@ -121,6 +120,10 @@ bool sceneWorld_DrawGUI()
 		ImGui::SetNextWindowSize(ImVec2(250, 120));
 
 		ImGui::Begin("Pause Menu", 0, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
+		if(ImGui::Button("Save world"))
+		{
+			world::persistence::saveWorld(GameData::get()->world.name);
+		}
 		if(ImGui::Button("Return to title"))
 		{
 			ImGui::End();

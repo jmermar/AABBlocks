@@ -1,6 +1,7 @@
 #include "world_persistence.hpp"
 #include "utils/files.hpp"
 #include <SQLiteCpp/SQLiteCpp.h>
+#include <iterator>
 namespace vblck
 {
 namespace world
@@ -8,7 +9,8 @@ namespace world
 namespace persistence
 {
 constexpr const char* WORLDS_PATH = "worlds/";
-constexpr size_t CHUNK_MEMORY_SIZE = sizeof(uint16_t) * CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
+constexpr size_t BLOCKS_PER_CHUNK = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
+constexpr size_t CHUNK_MEMORY_SIZE = sizeof(uint16_t) * BLOCKS_PER_CHUNK;
 void createDb(const std::string& worldName)
 {
 	auto* world = World::get();
@@ -38,13 +40,12 @@ void loadChunk(const SQLite::Database& db, uint32_t x, uint32_t y, uint32_t z)
 	{
 		const void* blob = query.getColumn("block_data").getBlob();
 		int blob_size = query.getColumn("block_data").getBytes();
-
 		if(blob_size != CHUNK_MEMORY_SIZE)
 		{
 			std::abort();
 		}
+		memcpy(chunk->blocks.data(), blob, blob_size);
 
-		memcpy(chunk->blocks.data(), blob, CHUNK_MEMORY_SIZE);
 		chunk->dirty = true;
 	}
 	else

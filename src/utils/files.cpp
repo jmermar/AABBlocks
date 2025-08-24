@@ -54,6 +54,15 @@ void createDirIfNotExists(const std::string& path)
 		std::filesystem::create_directories(path);
 	}
 }
+std::vector<std::string> listFilesInFolder(const std::string& path)
+{
+	std::vector<std::string> ret;
+	for(auto& entry : std::filesystem::directory_iterator(path))
+	{
+		ret.push_back(entry.path().filename());
+	}
+	return ret;
+}
 std::string loadTextFile(const std::string& path)
 {
 	std::ifstream file(path);
