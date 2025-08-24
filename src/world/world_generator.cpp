@@ -91,22 +91,15 @@ void WorldGenerator::generateSolids()
 	}
 }
 
-void WorldGenerator::generateWorld()
+void WorldGenerator::generateNewWorld()
 {
 	finished = false;
 	progress = 0.f;
 	std::thread t([&]() -> void {
-		if(world::persistence::exists(GameData::get()->world.name))
-		{
-			world::persistence::loadWorld(GameData::get()->world.name);
-		}
-		else
-		{
-			auto* world = World::get();
-			world->create(world_size, world_height);
-			initBlockIds();
-			generateSolids();
-		}
+		auto* world = World::get();
+		world->create(world_size, world_height);
+		initBlockIds();
+		generateSolids();
 		generateChunkData();
 		finished = true;
 	});
@@ -153,6 +146,17 @@ void WorldGenerator::generateChunkData()
 	}
 
 	finished = true;
+}
+void WorldGenerator::loadWorld()
+{
+	finished = false;
+	progress = 0.f;
+	std::thread t([&]() -> void {
+		persistence::loadWorld(GameData::get()->world.name);
+		generateChunkData();
+		finished = true;
+	});
+	t.detach();
 }
 } // namespace world
 } // namespace vblck

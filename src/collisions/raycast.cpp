@@ -4,15 +4,6 @@ namespace vblck
 {
 namespace collisions
 {
-inline int getsign(const float f)
-{
-	return 1 - (int)(((unsigned int&)f) >> 31) * 2;
-}
-
-inline glm::vec3 sign_of_dir(glm::vec3 v)
-{
-	return glm::vec3(getsign(v.x), getsign(v.y), getsign(v.z));
-}
 RaycastResult raycast(glm::vec3 pos, glm::vec3 dir, float distance)
 {
 	constexpr float delta = 0.05f;

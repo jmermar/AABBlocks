@@ -3,6 +3,7 @@
 #include "input.hpp"
 #include "input_imp.hpp"
 #include "rendering/renderer.hpp"
+#include "scenes/scene_mainmenu.hpp"
 #include "scenes/scene_world.hpp"
 #include "world/world.hpp"
 #include <SDL3/SDL.h>
@@ -30,40 +31,6 @@ std::shared_ptr<spdlog::logger>& getLogger()
 	return logger;
 }
 } // namespace vblck
-
-bool mainMenuUpdateGUI(float frameDelta)
-{
-
-	if(ImGui::Button("Gen 8x8 world"))
-	{
-		scenes::sceneWorld_Init(8, 16);
-		return true;
-	}
-
-	if(ImGui::Button("Gen 16x16 world"))
-	{
-		scenes::sceneWorld_Init(16, 16);
-		return true;
-	}
-
-	if(ImGui::Button("Gen 32x32 world"))
-	{
-		scenes::sceneWorld_Init(32, 16);
-		return true;
-	}
-
-	if(ImGui::Button("Gen 64x64 world"))
-	{
-		scenes::sceneWorld_Init(64, 16);
-		return true;
-	}
-	if(ImGui::Button("Gen 128x128 world"))
-	{
-		scenes::sceneWorld_Init(128, 16);
-		return true;
-	}
-	return false;
-}
 
 enum SceneState
 {
@@ -137,6 +104,8 @@ int main(int argc, char** argv)
 
 	std::thread pthread(fixedLoop);
 
+	scenes::sceneMainmenu_Init();
+
 	while(running)
 	{
 		input_Update(system.window, gameData.screen.width, gameData.screen.height);
@@ -171,8 +140,9 @@ int main(int argc, char** argv)
 
 		if(sceneState == SCENE_STATE_MAINMENU)
 		{
-			if(mainMenuUpdateGUI(frameDelta))
+			if(scenes::sceneMainmenu_DrawUI())
 			{
+				scenes::sceneMainmenu_Finish();
 				sceneState = SCENE_STATE_WORLD;
 			}
 		}
@@ -183,6 +153,7 @@ int main(int argc, char** argv)
 				sceneState = SCENE_STATE_MAINMENU;
 				scenes::sceneWorld_Finish();
 				renderer->worldRenderer.clearWorld();
+				scenes::sceneMainmenu_Init();
 			}
 		}
 

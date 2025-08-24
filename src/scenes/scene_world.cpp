@@ -8,32 +8,48 @@ namespace scenes
 {
 SceneWorldData scene;
 
-void sceneWorld_Init(uint32_t worldSize, uint32_t worldHeight)
+void sceneWorld_InitNewWorld(uint32_t worldSize, uint32_t worldHeight)
 {
-	auto worldName = GameData::get()->world.name;
-	scene.ui.blockSelect.currentSelect = 1;
-	scene.player.init();
-	scene.player.body.position = glm::vec3(1, 0, 1) * (float)(worldSize * 0.5f * world::CHUNK_SIZE);
-	scene.player.body.position.y = 50;
-
 	scene.worldGenerator.baseAmplitude = 20;
 	scene.worldGenerator.baseHeight = 16;
 	scene.worldGenerator.sandLevel = 25;
 	scene.worldGenerator.world_height = worldHeight;
 	scene.worldGenerator.world_size = worldSize;
-	scene.worldGenerator.generateWorld();
+	scene.worldGenerator.generateNewWorld();
+}
 
+void sceneWorld_LoadWorld(const std::string& name)
+{
+	GameData::get()->world.name = name;
+
+	scene.worldGenerator.loadWorld();
+}
+
+void onLoad()
+{
+	auto* world = world::World::get();
+	scene.player.init();
+	scene.player.body.position =
+		glm::vec3(1, 0, 1) * (float)(world->worldSize * 0.5f * world::CHUNK_SIZE);
+	scene.player.body.position.y = 50;
+	scene.ui.blockSelect.currentSelect = 1;
 	InputData::setCaptureMosue(true);
 }
 void sceneWorld_Finish()
 {
+	scene.loaded = false;
 	world::persistence::saveWorld(GameData::get()->world.name);
 }
 
 void sceneWorld_Update(float deltaTime, render::RenderState& renderState)
 {
 	auto* world = world::World::get();
-	if(!scene.worldGenerator.finished)
+	if(scene.worldGenerator.finished & !scene.loaded)
+	{
+		scene.loaded = true;
+		onLoad();
+	}
+	if(!scene.loaded)
 	{
 		return;
 	}
@@ -66,7 +82,7 @@ void sceneWorld_Update(float deltaTime, render::RenderState& renderState)
 }
 void sceneWorld_FixedUpdate()
 {
-	if(!scene.worldGenerator.finished)
+	if(!scene.loaded)
 	{
 		return;
 	}
@@ -79,7 +95,7 @@ void sceneWorld_FixedUpdate()
 bool sceneWorld_DrawGUI()
 {
 	auto* world = world::World::get();
-	if(!scene.worldGenerator.finished)
+	if(!scene.loaded)
 	{
 		ImGui::Text("Loading world");
 		ImGui::Text("Progress: %.2f", scene.worldGenerator.progress * 100.f);

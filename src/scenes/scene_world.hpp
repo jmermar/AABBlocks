@@ -21,9 +21,11 @@ struct SceneWorldData
 	UIState ui;
 	world::Player player;
 	world::WorldGenerator worldGenerator;
+	bool loaded = false;
 };
 
-void sceneWorld_Init(uint32_t worldSize, uint32_t worldHeight);
+void sceneWorld_InitNewWorld(uint32_t worldSize, uint32_t worldHeight);
+void sceneWorld_LoadWorld(const std::string& name);
 void sceneWorld_Finish();
 void sceneWorld_Update(float deltaTime, render::RenderState& rs);
 void sceneWorld_FixedUpdate();

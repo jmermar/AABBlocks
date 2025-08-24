@@ -27,6 +27,17 @@ struct Chunk
 		return bd && bd->solid;
 	}
 
+	bool isEmpty()
+	{
+		auto* data = (uint16_t*)blocks.data();
+		for(size_t i = 0; i < CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE; i++)
+		{
+			if(data[i])
+				return false;
+		}
+		return true;
+	}
+
 	uint64_t getID();
 };
 } // namespace world

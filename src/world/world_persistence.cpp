@@ -71,6 +71,10 @@ void saveWorld(const std::string& worldName)
 			for(uint32_t cy = 0; cy < world->worldHeight; cy++)
 			{
 				auto* chunk = world->chunkAt(cx, cy, cz);
+				if(chunk->isEmpty())
+				{
+					continue;
+				}
 				SQLite::Statement query(
 					db,
 					"INSERT OR REPLACE INTO chunks (chunk_x, chunk_y, chunk_z, block_data) "

@@ -32,8 +32,10 @@ struct WorldGenerator
 
 	void generateSolids();
 
-	void generateWorld();
 	void generateChunkData();
+
+	void generateNewWorld();
+	void loadWorld();
 };
 } // namespace world
 } // namespace vblck
