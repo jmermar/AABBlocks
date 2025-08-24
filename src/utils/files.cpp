@@ -5,6 +5,7 @@
 
 #include "types.hpp"
 #include <cstdint>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <vector>
@@ -31,6 +32,42 @@ ImageData readImageFromFile(const std::string& path)
 	stbi_image_free(data);
 
 	return img;
+}
+bool fileExists(const std::string& path)
+{
+	if(path.empty())
+	{
+		return false;
+	}
+
+	if(!std::filesystem::exists(path) || !std::filesystem::is_regular_file(path))
+	{
+		return false;
+	}
+
+	return true;
+}
+void createDirIfNotExists(const std::string& path)
+{
+	if(!std::filesystem::exists(path))
+	{
+		std::filesystem::create_directories(path);
+	}
+}
+std::string loadTextFile(const std::string& path)
+{
+	std::ifstream file(path);
+
+	if(!file.is_open())
+	{
+		LOG_ERR("CANNOT LOAD file");
+		exit(-1);
+	}
+
+	std::stringstream buffer;
+	buffer << file.rdbuf();
+
+	return buffer.str();
 }
 std::vector<BlockData> loadBlockData(const std::string& path)
 {

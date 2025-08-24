@@ -1,5 +1,6 @@
 #include "scene_world.hpp"
 #include "input.hpp"
+#include "world/world_persistence.hpp"
 #include <imgui.h>
 namespace vblck
 {
@@ -9,18 +10,25 @@ SceneWorldData scene;
 
 void sceneWorld_Init(uint32_t worldSize, uint32_t worldHeight)
 {
+	auto worldName = GameData::get()->world.name;
 	scene.ui.blockSelect.currentSelect = 1;
 	scene.player.init();
 	scene.player.body.position = glm::vec3(1, 0, 1) * (float)(worldSize * 0.5f * world::CHUNK_SIZE);
 	scene.player.body.position.y = 50;
+
 	scene.worldGenerator.baseAmplitude = 20;
 	scene.worldGenerator.baseHeight = 16;
 	scene.worldGenerator.sandLevel = 25;
 	scene.worldGenerator.world_height = worldHeight;
 	scene.worldGenerator.world_size = worldSize;
 	scene.worldGenerator.generateWorld();
+
+	InputData::setCaptureMosue(true);
 }
-void sceneWorld_Finish() { }
+void sceneWorld_Finish()
+{
+	world::persistence::saveWorld(GameData::get()->world.name);
+}
 
 void sceneWorld_Update(float deltaTime, render::RenderState& renderState)
 {
@@ -31,6 +39,11 @@ void sceneWorld_Update(float deltaTime, render::RenderState& renderState)
 	}
 	world->chunkGenerateCommands = std::move(scene.worldGenerator.chunksToGenerate);
 	world->update(deltaTime);
+
+	if(!InputData::getCaptureMosue())
+	{
+		return;
+	}
 
 	if(InputData::isPressed(INPUT_SELECT_UP))
 	{
@@ -57,6 +70,10 @@ void sceneWorld_FixedUpdate()
 	{
 		return;
 	}
+	if(!InputData::getCaptureMosue())
+	{
+		return;
+	}
 	scene.player.fixedUpdate();
 }
 bool sceneWorld_DrawGUI()
@@ -72,21 +89,28 @@ bool sceneWorld_DrawGUI()
 	{
 		InputData::setCaptureMosue(!InputData::getCaptureMosue());
 	}
-
-	if(!InputData::getCaptureMosue())
-	{
-		if(ImGui::Button("Return to title"))
-		{
-			return true;
-		}
-	}
-
+	ImGui::Spacing();
 	ImGui::Text("Select Block");
 	for(uint32_t i = 1; i <= world->blockDatabase.blocks.size(); i++)
 	{
 		bool select = i == scene.ui.blockSelect.currentSelect;
 		auto* block = world->blockDatabase.getBlockFromId(i);
 		ImGui::MenuItem(block->name.c_str(), 0, &select);
+	}
+
+	if(!InputData::getCaptureMosue())
+	{
+		ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+		ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+		ImGui::SetNextWindowSize(ImVec2(250, 120));
+
+		ImGui::Begin("Pause Menu", 0, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
+		if(ImGui::Button("Return to title"))
+		{
+			ImGui::End();
+			return true;
+		}
+		ImGui::End();
 	}
 
 	return false;

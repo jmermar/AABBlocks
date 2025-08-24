@@ -73,6 +73,9 @@
         "variant": "cpp",
         "cmake.generator": "Unix Makefiles",
         "unordered_set": "cpp",
-        "set": "cpp"
+        "set": "cpp",
+        "any": "cpp",
+        "csignal": "cpp",
+        "forward_list": "cpp"
     }
 }

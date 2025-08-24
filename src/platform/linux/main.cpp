@@ -19,7 +19,12 @@ std::shared_ptr<spdlog::logger> logger;
 
 namespace vblck
 {
+GameData gameData;
 
+GameData* GameData::get()
+{
+	return &gameData;
+}
 std::shared_ptr<spdlog::logger>& getLogger()
 {
 	return logger;
@@ -99,10 +104,11 @@ int main(int argc, char** argv)
 
 	System system{};
 
-	system = initSystemLinux("Vulkan App", 1920, 1080);
-	auto imguiInstance = initImgui(system);
+	gameData.screen.width = 1920;
+	gameData.screen.height = 1080;
 
-	uint32_t w = 1920, h = 1080;
+	system = initSystemLinux("Vulkan App", gameData.screen.width, gameData.screen.height);
+	auto imguiInstance = initImgui(system);
 
 	auto* renderer = new render::Renderer(system.instance,
 										  system.chosenGPU,
@@ -110,8 +116,8 @@ int main(int argc, char** argv)
 										  system.surface,
 										  system.graphicsQueue,
 										  system.graphicsQueueFamily,
-										  w,
-										  h);
+										  gameData.screen.width,
+										  gameData.screen.height);
 
 	running = true;
 	auto ticks = SDL_GetTicks();
@@ -133,7 +139,7 @@ int main(int argc, char** argv)
 
 	while(running)
 	{
-		input_Update(system.window, w, h);
+		input_Update(system.window, gameData.screen.width, gameData.screen.height);
 		SDL_Event e;
 		while(SDL_PollEvent(&e))
 		{
@@ -145,10 +151,11 @@ int main(int argc, char** argv)
 			case SDL_EVENT_WINDOW_RESIZED: {
 				auto iw = e.window.data1;
 				auto ih = e.window.data2;
-				renderer->recreateSwapchain(w, h);
-				w = (uint32_t)iw;
-				h = (uint32_t)ih;
-				renderState.camera.aspect = (float)w / (float)h;
+				renderer->recreateSwapchain(gameData.screen.width, gameData.screen.height);
+				gameData.screen.width = (uint32_t)iw;
+				gameData.screen.height = (uint32_t)ih;
+				renderState.camera.aspect =
+					(float)gameData.screen.width / (float)gameData.screen.height;
 			}
 			break;
 			}

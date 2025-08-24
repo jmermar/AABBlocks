@@ -38,4 +38,20 @@ struct BlockData
 	bool solid;
 	uint32_t faces[6];
 };
+
+struct GameData
+{
+	struct
+	{
+		std::string name;
+		uint32_t width, height;
+	} screen;
+
+	struct
+	{
+		std::string name = "World1";
+	} world;
+
+	static GameData* get();
+};
 } // namespace vblck

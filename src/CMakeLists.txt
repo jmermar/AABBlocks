@@ -40,6 +40,8 @@ target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE
     imgui
     OpenMP::OpenMP_CXX
     Threads::Threads
+    SQLiteCpp
+    sqlite3
 )
 
 target_include_directories(${CMAKE_PROJECT_NAME}

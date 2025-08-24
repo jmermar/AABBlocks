@@ -21,6 +21,13 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(vkb)
 
+FetchContent_Declare(
+  sqlite
+  GIT_REPOSITORY https://github.com/SRombauts/SQLiteCpp.git
+  GIT_TAG 3.3.3
+)
+FetchContent_MakeAvailable(sqlite)
+
 add_subdirectory(vma)
 add_subdirectory(spdlog)
 add_subdirectory(stb_image)

@@ -1,6 +1,7 @@
 #include "world_generator.hpp"
 #include "FastNoiseLite.h"
 #include "world.hpp"
+#include "world/world_persistence.hpp"
 #include <omp.h>
 namespace vblck
 {
@@ -93,12 +94,20 @@ void WorldGenerator::generateSolids()
 void WorldGenerator::generateWorld()
 {
 	finished = false;
+	progress = 0.f;
 	std::thread t([&]() -> void {
-		auto* world = World::get();
-		world->create(world_size, world_height);
-		initBlockIds();
-		generateSolids();
-		generateChunkData();
+		if(world::persistence::exists(GameData::get()->world.name))
+		{
+			world::persistence::loadWorld(GameData::get()->world.name);
+		}
+		else
+		{
+			auto* world = World::get();
+			world->create(world_size, world_height);
+			initBlockIds();
+			generateSolids();
+			generateChunkData();
+		}
 		finished = true;
 	});
 	t.detach();
