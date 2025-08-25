@@ -5,6 +5,7 @@
 #include "rendering/renderer.hpp"
 #include "scenes/scene_mainmenu.hpp"
 #include "scenes/scene_world.hpp"
+#include "utils/debug.hpp"
 #include "world/world.hpp"
 #include <SDL3/SDL.h>
 #include <backends/imgui_impl_sdl3.h>
@@ -137,6 +138,7 @@ int main(int argc, char** argv)
 
 		ImGui::NewFrame();
 		ImGui::Text("FPS: %f", 1000.f / frameDelta);
+		renderState.debug.renderBuffer = debugGetRenderBuffer();
 
 		if(sceneState == SCENE_STATE_MAINMENU)
 		{

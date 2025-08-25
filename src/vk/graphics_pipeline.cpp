@@ -39,8 +39,13 @@ VkPipeline GraphicsPipelineBuilder::buildPipeline(VkDevice device)
 
 	colorBlending.logicOpEnable = VK_FALSE;
 	colorBlending.logicOp = VK_LOGIC_OP_COPY;
-	colorBlending.attachmentCount = 1;
-	colorBlending.pAttachments = &_colorBlendAttachment;
+	std::vector<VkPipelineColorBlendAttachmentState> blends(_colorAttachmentformats.size());
+	for(auto& blend : blends)
+	{
+		blend = _colorBlendAttachment;
+	}
+	colorBlending.attachmentCount = blends.size();
+	colorBlending.pAttachments = blends.data();
 
 	// completely clear VertexInputStateCreateInfo, as we have no need for it
 	VkPipelineVertexInputStateCreateInfo _vertexInputInfo = {

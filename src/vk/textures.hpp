@@ -251,9 +251,7 @@ struct DepthTexture
 		imageBarrier.oldLayout = currentLayout;
 		imageBarrier.newLayout = newLayout;
 
-		VkImageAspectFlags aspectMask = (newLayout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL)
-											? VK_IMAGE_ASPECT_DEPTH_BIT
-											: VK_IMAGE_ASPECT_COLOR_BIT;
+		VkImageAspectFlags aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
 
 		imageBarrier.subresourceRange = vk::Init::imageSubresourceRange(aspectMask);
 		imageBarrier.image = data.image;

@@ -285,8 +285,11 @@ void ChunkRenderer::createPipeline()
 	pipelineBuilder.set_depth_format(VK_FORMAT_D32_SFLOAT);
 	pipelineBuilder.enable_depthtest();
 
+	VkFormat colorFormats[3] = {
+		VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_R8G8B8A8_UNORM};
+
 	//connect the image format we will draw into, from draw image
-	pipelineBuilder.set_color_attachment_format(VK_FORMAT_R8G8B8A8_UNORM);
+	pipelineBuilder.set_color_attachment_format(std::span(colorFormats));
 
 	//finally build the pipeline
 	pipeline = pipelineBuilder.buildPipeline(render->device);
@@ -405,18 +408,34 @@ void ChunkRenderer::render(VkCommandBuffer cmd)
 	render->textureAtlas.transition(
 		cmd, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	auto* backbuffer = render->getBackbuffer();
-	auto colorAttachment = vk::Init::attachementInfo(
-		backbuffer->imageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+	auto* deferredBuffers = &render->deferredBuffers;
+
+	VkRenderingAttachmentInfo colorAttachments[3];
+	VkClearValue clearVal;
+	clearVal.color.float32[0] = 0;
+	clearVal.color.float32[1] = 0;
+	clearVal.color.float32[2] = 0;
+	clearVal.color.float32[3] = 0;
+	colorAttachments[0] = vk::Init::attachementInfo(
+		deferredBuffers->albedo.imageView, &clearVal, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+	colorAttachments[1] = vk::Init::attachementInfo(
+		deferredBuffers->normal.imageView, &clearVal, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+	colorAttachments[2] = vk::Init::attachementInfo(
+		deferredBuffers->material.imageView, &clearVal, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
 	VkClearValue clearValue{};
 	clearValue.depthStencil.depth = 1;
-	auto depthAttachment = vk::Init::attachementInfo(
-		render->depthBuffer.imageView, &clearValue, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+	auto depthAttachment = vk::Init::attachementInfo(deferredBuffers->depthBuffer.imageView,
+													 &clearValue,
+													 VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
 	VkRenderingInfo renderInfo = {.sType = VK_STRUCTURE_TYPE_RENDERING_INFO};
 
-	renderInfo.renderArea = {{0, 0}, backbuffer->extent};
-	renderInfo.colorAttachmentCount = 1;
-	renderInfo.pColorAttachments = &colorAttachment;
+	renderInfo.renderArea = {{0, 0}, render->screenExtent};
+	renderInfo.colorAttachmentCount = 3;
+	renderInfo.pColorAttachments = colorAttachments;
 	renderInfo.pDepthAttachment = &depthAttachment;
 	renderInfo.pStencilAttachment = 0;
 	renderInfo.layerCount = 1;
@@ -448,13 +467,6 @@ void ChunkRenderer::render(VkCommandBuffer cmd)
 	scissor.extent.height = backbuffer->extent.height;
 
 	vkCmdSetScissor(cmd, 0, 1, &scissor);
-
-	/*
-	int i = 0;
-	for(auto& c : chunks)
-	{
-		vkCmdDraw(cmd, c->numVertices, 1, 0, i++);
-	}*/
 
 	vkCmdDrawIndirectCount(cmd,
 						   chunkDrawCommands.data.buffer,

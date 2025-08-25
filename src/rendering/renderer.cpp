@@ -84,7 +84,7 @@ Renderer* Renderer::renderInstance = 0;
 void Renderer::destroySwapchain()
 {
 	backbuffer.destroy(&frameDeletionQueue);
-	depthBuffer.destroy(&frameDeletionQueue);
+	deferredBuffers.destroy(&frameDeletionQueue);
 	if(swapchain != VK_NULL_HANDLE)
 	{
 		vkDestroySwapchainKHR(device, swapchain, nullptr);
@@ -116,18 +116,57 @@ void Renderer::cleanup()
 
 void Renderer::renderLogic(CommandBuffer* cmd)
 {
-	depthBuffer.transition(
-		cmd->getCmd(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 	backbuffer.transition(cmd->getCmd(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 	backbuffer.clear(cmd->getCmd(), 0, 0, 0);
 	backbuffer.transition(
-		cmd->getCmd(), VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+		cmd->getCmd(), VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
 	worldRenderer.render(cmd->getCmd());
 
-	backbuffer.transition(cmd->getCmd(),
-						  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-						  VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+	if(state.debug.renderBuffer == RenderState::ALBEDO)
+	{
+		deferredBuffers.albedo.transition(cmd->getCmd(),
+										  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+										  VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+		vk::copyImageToImage(cmd->getCmd(),
+							 deferredBuffers.albedo.data.image,
+							 backbuffer.data.image,
+							 screenExtent,
+							 screenExtent,
+							 0,
+							 0);
+	}
+	else if(state.debug.renderBuffer == RenderState::NORMAL)
+	{
+		deferredBuffers.normal.transition(cmd->getCmd(),
+										  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+										  VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+		vk::copyImageToImage(cmd->getCmd(),
+							 deferredBuffers.normal.data.image,
+							 backbuffer.data.image,
+							 screenExtent,
+							 screenExtent,
+							 0,
+							 0);
+	}
+	else if(state.debug.renderBuffer == RenderState::MATERIAL)
+	{
+		deferredBuffers.material.transition(cmd->getCmd(),
+											VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+											VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+		vk::copyImageToImage(cmd->getCmd(),
+							 deferredBuffers.material.data.image,
+							 backbuffer.data.image,
+							 screenExtent,
+							 screenExtent,
+							 0,
+							 0);
+	}
+	else if(state.debug.renderBuffer == RenderState::DEPTH)
+	{
+	}
+	backbuffer.transition(
+		cmd->getCmd(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 }
 
 void Renderer::renderImGUI(VkCommandBuffer cmd, VkImageView targetImageView)
@@ -220,11 +259,12 @@ void Renderer::recreateSwapchain(int w, int h)
 	}
 
 	backbuffer.createTexture(device, vma, VkExtent2D{(unsigned int)w, (unsigned int)h}, 1);
-	depthBuffer.createTexture(device, vma, VkExtent2D{(unsigned int)w, (unsigned int)h}, 1);
+	deferredBuffers.create(device, vma, VkExtent2D{(unsigned int)w, (unsigned int)h});
 }
 
 void Renderer::renderFrame(RenderState& state)
 {
+	this->state = state;
 	computedUtils.camFrustum = state.cullCamera.getFrustum();
 	vkWaitForFences(device, 1, &getCurrentFrame().renderFence, true, 1000000000);
 	vkResetFences(device, 1, &getCurrentFrame().renderFence);
@@ -391,6 +431,21 @@ Frustum Camera::getFrustum()
 	frustum.back.norm();
 
 	return frustum;
+}
+void DeferredBuffers::create(VkDevice device, VmaAllocator vma, VkExtent2D size)
+{
+	depthBuffer.createTexture(device, vma, size, 1);
+	albedo.createTexture(device, vma, size, 1);
+	normal.createTexture(device, vma, size, 1);
+	material.createTexture(device, vma, size, 1);
+}
+
+void DeferredBuffers::destroy(vk::DeletionQueue* deletion)
+{
+	depthBuffer.destroy(deletion);
+	albedo.destroy(deletion);
+	normal.destroy(deletion);
+	material.destroy(deletion);
 }
 } // namespace render
 } // namespace vblck

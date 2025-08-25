@@ -32,7 +32,7 @@ public:
 	VkPipelineLayout _pipelineLayout;
 	VkPipelineDepthStencilStateCreateInfo _depthStencil;
 	VkPipelineRenderingCreateInfo _renderInfo;
-	VkFormat _colorAttachmentformat;
+	std::vector<VkFormat> _colorAttachmentformats;
 
 	GraphicsPipelineBuilder()
 	{
@@ -106,10 +106,23 @@ public:
 
 	void set_color_attachment_format(VkFormat format)
 	{
-		_colorAttachmentformat = format;
+		_colorAttachmentformats.resize(1);
+		_colorAttachmentformats[0] = format;
 		// connect the format to the renderInfo  structure
 		_renderInfo.colorAttachmentCount = 1;
-		_renderInfo.pColorAttachmentFormats = &_colorAttachmentformat;
+		_renderInfo.pColorAttachmentFormats = _colorAttachmentformats.data();
+	}
+
+	void set_color_attachment_format(std::span<VkFormat> formats)
+	{
+		_colorAttachmentformats.resize(formats.size());
+		for(size_t i = 0; i < formats.size(); i++)
+		{
+			_colorAttachmentformats[i] = formats[i];
+		}
+		// connect the format to the renderInfo  structure
+		_renderInfo.colorAttachmentCount = _colorAttachmentformats.size();
+		_renderInfo.pColorAttachmentFormats = _colorAttachmentformats.data();
 	}
 
 	void set_depth_format(VkFormat format)

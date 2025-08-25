@@ -52,6 +52,21 @@ struct RenderState
 {
 	Camera camera{};
 	Camera cullCamera{};
+
+	enum DebugRenderBuffer
+	{
+		NOTHING,
+		DEPTH,
+		ALBEDO,
+		NORMAL,
+		MATERIAL,
+		POSITION
+	};
+
+	struct
+	{
+		DebugRenderBuffer renderBuffer = NOTHING;
+	} debug;
 };
 
 constexpr unsigned int FRAME_OVERLAP = 2;
@@ -65,6 +80,17 @@ struct FrameData
 	std::unique_ptr<CommandBuffer> mainCommandBuffer;
 
 	vk::DeletionQueue deletionQueue;
+};
+
+struct DeferredBuffers
+{
+	vk::DepthTexture depthBuffer;
+	vk::Texture2D albedo;
+	vk::Texture2D normal;
+	vk::Texture2D material;
+
+	void create(VkDevice device, VmaAllocator vma, VkExtent2D size);
+	void destroy(vk::DeletionQueue* deletion);
 };
 
 struct GlobalRenderData
@@ -110,11 +136,14 @@ struct Renderer
 	BufferWritter bufferWritter;
 
 	vk::Texture2D backbuffer;
-	vk::DepthTexture depthBuffer;
+
+	DeferredBuffers deferredBuffers;
 
 	WorldRenderer worldRenderer;
 
 	vk::Texture2DArray textureAtlas{};
+
+	RenderState state;
 
 	struct
 	{
