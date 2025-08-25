@@ -45,35 +45,55 @@ struct ChunkDrawCommandsDispatcherPushConstants
 void ChunkDrawCommandsDispatcher::createBuffers()
 {
 	auto* render = Renderer::get();
-	dispatchBuffer.create(render->device, render->vma, sizeof(uint32_t) * 2);
+	dispatchBuffer.create(render->device,
+						  render->vma,
+						  sizeof(uint32_t) * 2);
 }
 
-void ChunkDrawCommandsDispatcher::createDescriptors(vk::DescriptorAllocator* allocator)
+void ChunkDrawCommandsDispatcher::
+	createDescriptors(
+		vk::DescriptorAllocator* allocator)
 {
 	auto* render = Renderer::get();
-	auto* chunkRenderer = &render->worldRenderer.chunkRenderer;
+	auto* chunkRenderer =
+		&render->worldRenderer.chunkRenderer;
 	vk::DescriptorLayoutBuilder layoutBuilder;
-	layoutBuilder.addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-	layoutBuilder.addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-	layoutBuilder.addBinding(2, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-	descriptorSetLayout = layoutBuilder.build(Renderer::get()->device, VK_SHADER_STAGE_COMPUTE_BIT);
+	layoutBuilder.addBinding(
+		0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+	layoutBuilder.addBinding(
+		1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+	layoutBuilder.addBinding(
+		2, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+	descriptorSetLayout = layoutBuilder.build(
+		Renderer::get()->device,
+		VK_SHADER_STAGE_COMPUTE_BIT);
 
-	descriptorSet = allocator->allocate(Renderer::get()->device, descriptorSetLayout);
-
-	vk::DescriptorWritter::writeBuffer(render->device,
-									   descriptorSet,
-									   0,
-									   chunkRenderer->chunksDataBuffer.data.buffer,
-									   chunkRenderer->chunksDataBuffer.size);
-
-	vk::DescriptorWritter::writeBuffer(render->device,
-									   descriptorSet,
-									   1,
-									   chunkRenderer->chunkDrawCommands.data.buffer,
-									   chunkRenderer->chunkDrawCommands.size);
+	descriptorSet = allocator->allocate(
+		Renderer::get()->device,
+		descriptorSetLayout);
 
 	vk::DescriptorWritter::writeBuffer(
-		render->device, descriptorSet, 2, dispatchBuffer.data.buffer, dispatchBuffer.size);
+		render->device,
+		descriptorSet,
+		0,
+		chunkRenderer->chunksDataBuffer.data
+			.buffer,
+		chunkRenderer->chunksDataBuffer.size);
+
+	vk::DescriptorWritter::writeBuffer(
+		render->device,
+		descriptorSet,
+		1,
+		chunkRenderer->chunkDrawCommands.data
+			.buffer,
+		chunkRenderer->chunkDrawCommands.size);
+
+	vk::DescriptorWritter::writeBuffer(
+		render->device,
+		descriptorSet,
+		2,
+		dispatchBuffer.data.buffer,
+		dispatchBuffer.size);
 }
 
 void ChunkDrawCommandsDispatcher::createPipeline()
@@ -81,31 +101,47 @@ void ChunkDrawCommandsDispatcher::createPipeline()
 	auto* render = Renderer::get();
 
 	// PipelineLayout
-	VkPipelineLayoutCreateInfo layoutInfo{.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
+	VkPipelineLayoutCreateInfo layoutInfo{
+		.sType =
+			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
 
-	VkDescriptorSetLayout descriptors[2] = {Renderer::get()->renderData.globalDescriptorLayout,
-											descriptorSetLayout};
+	VkDescriptorSetLayout descriptors[2] = {
+		Renderer::get()
+			->renderData.globalDescriptorLayout,
+		descriptorSetLayout};
 
 	layoutInfo.setLayoutCount = 2;
 	layoutInfo.pSetLayouts = descriptors;
 
 	VkPushConstantRange pushRange;
-	pushRange.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-	pushRange.size = sizeof(ChunkDrawCommandsDispatcherPushConstants);
+	pushRange.stageFlags =
+		VK_SHADER_STAGE_COMPUTE_BIT;
+	pushRange.size = sizeof(
+		ChunkDrawCommandsDispatcherPushConstants);
 	pushRange.offset = 0;
 
 	layoutInfo.pushConstantRangeCount = 1;
 	layoutInfo.pPushConstantRanges = &pushRange;
 
-	VKTRY(vkCreatePipelineLayout(render->device, &layoutInfo, nullptr, &pipelineLayout));
+	VKTRY(
+		vkCreatePipelineLayout(render->device,
+							   &layoutInfo,
+							   nullptr,
+							   &pipelineLayout));
 
-	auto shaderModuleCode = loadBinaryFile("res/shaders/dispatcher.comp.spv");
+	auto shaderModuleCode = loadBinaryFile(
+		"res/shaders/dispatcher.comp.spv");
 
-	auto shaderModule = vk::createShaderModule(render->device, shaderModuleCode);
+	auto shaderModule = vk::createShaderModule(
+		render->device, shaderModuleCode);
 
-	pipeline = vk::createComputePipeline(render->device, pipelineLayout, shaderModule);
+	pipeline =
+		vk::createComputePipeline(render->device,
+								  pipelineLayout,
+								  shaderModule);
 
-	vkDestroyShaderModule(render->device, shaderModule, nullptr);
+	vkDestroyShaderModule(
+		render->device, shaderModule, nullptr);
 }
 
 void ChunkDrawCommandsDispatcher::destroy()
@@ -114,114 +150,223 @@ void ChunkDrawCommandsDispatcher::destroy()
 
 	vk::DeletionQueue deletion;
 
-	vkDestroyPipeline(render->device, pipeline, nullptr);
-	vkDestroyPipelineLayout(render->device, pipelineLayout, nullptr);
-	vkDestroyDescriptorSetLayout(render->device, descriptorSetLayout, nullptr);
+	vkDestroyPipeline(
+		render->device, pipeline, nullptr);
+	vkDestroyPipelineLayout(
+		render->device, pipelineLayout, nullptr);
+	vkDestroyDescriptorSetLayout(
+		render->device,
+		descriptorSetLayout,
+		nullptr);
 
 	dispatchBuffer.destroy(&deletion);
 
-	deletion.deleteQueue(render->device, render->vma);
+	deletion.deleteQueue(render->device,
+						 render->vma);
 }
 
-void ChunkDrawCommandsDispatcher::dispatch(VkCommandBuffer cmd, uint32_t nChunks)
+void ChunkDrawCommandsDispatcher::dispatch(
+	VkCommandBuffer cmd, uint32_t nChunks)
 {
 	assert(nChunks > 0);
-	auto globalDescriptor = Renderer::get()->renderData.getGlobalDescriptor();
-	vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
+	auto globalDescriptor =
+		Renderer::get()
+			->renderData.getGlobalDescriptor();
+	vkCmdBindPipeline(
+		cmd,
+		VK_PIPELINE_BIND_POINT_COMPUTE,
+		pipeline);
 	vkCmdBindDescriptorSets(
-		cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0, 1, &globalDescriptor, 0, nullptr);
+		cmd,
+		VK_PIPELINE_BIND_POINT_COMPUTE,
+		pipelineLayout,
+		0,
+		1,
+		&globalDescriptor,
+		0,
+		nullptr);
 	vkCmdBindDescriptorSets(
-		cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 1, 1, &descriptorSet, 0, nullptr);
+		cmd,
+		VK_PIPELINE_BIND_POINT_COMPUTE,
+		pipelineLayout,
+		1,
+		1,
+		&descriptorSet,
+		0,
+		nullptr);
 	ChunkDrawCommandsDispatcherPushConstants push;
 	push.nChunks = nChunks;
-	vkCmdPushConstants(cmd,
-					   pipelineLayout,
-					   VK_SHADER_STAGE_COMPUTE_BIT,
-					   0,
-					   sizeof(ChunkDrawCommandsDispatcherPushConstants),
-					   &push);
+	vkCmdPushConstants(
+		cmd,
+		pipelineLayout,
+		VK_SHADER_STAGE_COMPUTE_BIT,
+		0,
+		sizeof(
+			ChunkDrawCommandsDispatcherPushConstants),
+		&push);
 
 	uint32_t groupCount = 1 + (nChunks / 256);
 	vkCmdDispatch(cmd, groupCount, 1, 1);
 }
 
-constexpr Face pushFace(glm::vec3 top, glm::vec3 normal, glm::vec3 right, glm::vec3 down)
+constexpr Face pushFace(glm::vec3 top,
+						glm::vec3 normal,
+						glm::vec3 right,
+						glm::vec3 down)
 {
 
 	Face pushFace;
-	pushFace.vertices[2] = {top, 0.f, normal, 0.f, glm::vec2(0, 0), {0.f, 0.f}};
-	pushFace.vertices[1] = {top + down, 0.f, normal, 0.f, glm::vec2(0, 1), {0.f, 0.f}};
-	pushFace.vertices[0] = {top + down + right, 0.f, normal, 0.f, glm::vec2(1, 1), {0.f, 0.f}};
-	pushFace.vertices[5] = {top, 0.f, normal, 0.f, glm::vec2(0, 0), {0.f, 0.f}};
-	pushFace.vertices[4] = {top + down + right, 0, normal, 0.f, glm::vec2(1, 1), {0.f, 0.f}};
-	pushFace.vertices[3] = {top + right, 0.f, normal, 0.f, glm::vec2(1, 0), {0.f, 0.f}};
+	pushFace.vertices[2] = {top,
+							0.f,
+							normal,
+							0.f,
+							glm::vec2(0, 0),
+							{0.f, 0.f}};
+	pushFace.vertices[1] = {top + down,
+							0.f,
+							normal,
+							0.f,
+							glm::vec2(0, 1),
+							{0.f, 0.f}};
+	pushFace.vertices[0] = {top + down + right,
+							0.f,
+							normal,
+							0.f,
+							glm::vec2(1, 1),
+							{0.f, 0.f}};
+	pushFace.vertices[5] = {top,
+							0.f,
+							normal,
+							0.f,
+							glm::vec2(0, 0),
+							{0.f, 0.f}};
+	pushFace.vertices[4] = {top + down + right,
+							0,
+							normal,
+							0.f,
+							glm::vec2(1, 1),
+							{0.f, 0.f}};
+	pushFace.vertices[3] = {top + right,
+							0.f,
+							normal,
+							0.f,
+							glm::vec2(1, 0),
+							{0.f, 0.f}};
 	return pushFace;
 };
 
 Face precomputedVerticesData[6] = {
 	//Front
-	pushFace({0, 1, 1}, {0, 0, -1}, {1, 0, 0}, {0, -1, 0}),
+	pushFace({0, 1, 1},
+			 {0, 0, -1},
+			 {1, 0, 0},
+			 {0, -1, 0}),
 	//Back
-	pushFace({1, 1, 0}, {0, 0, 1}, {-1, 0, 0}, {0, -1, 0}),
+	pushFace({1, 1, 0},
+			 {0, 0, 1},
+			 {-1, 0, 0},
+			 {0, -1, 0}),
 	// Right
-	pushFace({1, 1, 1}, {1, 0, 0}, {0, 0, -1}, {0, -1, 0}),
+	pushFace({1, 1, 1},
+			 {1, 0, 0},
+			 {0, 0, -1},
+			 {0, -1, 0}),
 	// Left
-	pushFace({0, 1, 0}, {-1, 0, 0}, {0, 0, 1}, {0, -1, 0}),
+	pushFace({0, 1, 0},
+			 {-1, 0, 0},
+			 {0, 0, 1},
+			 {0, -1, 0}),
 	//Top
-	pushFace({0, 1, 0}, {0, 1, 0}, {1, 0, 0}, {0, 0, 1}),
+	pushFace({0, 1, 0},
+			 {0, 1, 0},
+			 {1, 0, 0},
+			 {0, 0, 1}),
 	//Bottom
-	pushFace({0, 0, 1}, {0, -1, 0}, {1, 0, 0}, {0, 0, -1}),
+	pushFace({0, 0, 1},
+			 {0, -1, 0},
+			 {1, 0, 0},
+			 {0, 0, -1}),
 
 };
 
-void ChunkRenderer::createDescriptors(vk::DescriptorAllocator* allocator)
+void ChunkRenderer::createDescriptors(
+	vk::DescriptorAllocator* allocator)
 {
 	auto* render = Renderer::get();
 
 	vk::DescriptorLayoutBuilder layoutBuilder;
-	layoutBuilder.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-	layoutBuilder.addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-	layoutBuilder.addBinding(2, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-	descriptorSetLayout =
-		layoutBuilder.build(Renderer::get()->device, VK_SHADER_STAGE_ALL_GRAPHICS);
+	layoutBuilder.addBinding(
+		0,
+		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+	layoutBuilder.addBinding(
+		1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+	layoutBuilder.addBinding(
+		2, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+	descriptorSetLayout = layoutBuilder.build(
+		Renderer::get()->device,
+		VK_SHADER_STAGE_ALL_GRAPHICS);
 
-	descriptorSet = allocator->allocate(Renderer::get()->device, descriptorSetLayout);
+	descriptorSet = allocator->allocate(
+		Renderer::get()->device,
+		descriptorSetLayout);
 
 	VkDescriptorImageInfo imageInfo{};
-	imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-	imageInfo.imageView = render->textureAtlas.imageView;
-	imageInfo.sampler = render->textureAtlas.sampler;
+	imageInfo.imageLayout =
+		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	imageInfo.imageView =
+		render->textureAtlas.imageView;
+	imageInfo.sampler =
+		render->textureAtlas.sampler;
 
 	VkDescriptorBufferInfo bufferInfo;
-	bufferInfo.buffer = precomputedVertices.data.buffer;
+	bufferInfo.buffer =
+		precomputedVertices.data.buffer;
 	bufferInfo.offset = 0;
 	bufferInfo.range = precomputedVertices.size;
 
-	VkWriteDescriptorSet writeDescriptorSet{.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+	VkWriteDescriptorSet writeDescriptorSet{
+		.sType =
+			VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
 	writeDescriptorSet.dstSet = descriptorSet;
 	writeDescriptorSet.descriptorCount = 1;
 	writeDescriptorSet.dstBinding = 0;
 	writeDescriptorSet.dstArrayElement = 0;
-	writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	writeDescriptorSet.descriptorType =
+		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	writeDescriptorSet.pImageInfo = &imageInfo;
-	vkUpdateDescriptorSets(render->device, 1, &writeDescriptorSet, 0, 0);
+	vkUpdateDescriptorSets(render->device,
+						   1,
+						   &writeDescriptorSet,
+						   0,
+						   0);
 	writeDescriptorSet.dstBinding = 1;
 	writeDescriptorSet.dstArrayElement = 0;
-	writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+	writeDescriptorSet.descriptorType =
+		VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 	writeDescriptorSet.pBufferInfo = &bufferInfo;
 	writeDescriptorSet.pImageInfo = 0;
-	vkUpdateDescriptorSets(render->device, 1, &writeDescriptorSet, 0, 0);
+	vkUpdateDescriptorSets(render->device,
+						   1,
+						   &writeDescriptorSet,
+						   0,
+						   0);
 
-	bufferInfo.buffer = chunksDataBuffer.data.buffer;
+	bufferInfo.buffer =
+		chunksDataBuffer.data.buffer;
 	bufferInfo.offset = 0;
 	bufferInfo.range = chunksDataBuffer.size;
 
 	writeDescriptorSet.dstBinding = 2;
 	writeDescriptorSet.dstArrayElement = 0;
-	writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+	writeDescriptorSet.descriptorType =
+		VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 	writeDescriptorSet.pBufferInfo = &bufferInfo;
 	writeDescriptorSet.pImageInfo = 0;
-	vkUpdateDescriptorSets(render->device, 1, &writeDescriptorSet, 0, 0);
+	vkUpdateDescriptorSets(render->device,
+						   1,
+						   &writeDescriptorSet,
+						   0,
+						   0);
 }
 void ChunkRenderer::createBuffers()
 {
@@ -229,74 +374,116 @@ void ChunkRenderer::createBuffers()
 
 	// PrecomputedVertices
 
-	precomputedVertices.create(render->device, render->vma, sizeof(Face) * 6);
+	precomputedVertices.create(render->device,
+							   render->vma,
+							   sizeof(Face) * 6);
 	vk::StagingBuffer precomputedStaging;
-	precomputedStaging.create(render->device, render->vma, sizeof(Face) * 6);
-	precomputedStaging.write(std::span<Face>(precomputedVerticesData));
-	render->bufferWritter.writeToSSBO(precomputedStaging.data.buffer, &precomputedVertices);
-	precomputedStaging.destroy(&render->frameDeletionQueue);
+	precomputedStaging.create(render->device,
+							  render->vma,
+							  sizeof(Face) * 6);
+	precomputedStaging.write(
+		std::span<Face>(precomputedVerticesData));
+	render->bufferWritter.writeToSSBO(
+		precomputedStaging.data.buffer,
+		&precomputedVertices);
+	precomputedStaging.destroy(
+		&render->frameDeletionQueue);
 
 	// ChunkDataBuffer
 
-	chunksDataBuffer.create(render->device, render->vma, sizeof(ChunkDataBuffer) * MAX_CHUNKS);
+	chunksDataBuffer.create(
+		render->device,
+		render->vma,
+		sizeof(ChunkDataBuffer) * MAX_CHUNKS);
 
 	//ChunkDrawCommands
 	chunkDrawCommands.create(
-		render->device, render->vma, sizeof(VkDrawIndirectCommand) * MAX_CHUNKS);
+		render->device,
+		render->vma,
+		sizeof(VkDrawIndirectCommand) *
+			MAX_CHUNKS);
 }
 void ChunkRenderer::createPipeline()
 {
 	auto* render = Renderer::get();
 
 	// PipelineLayout
-	VkPipelineLayoutCreateInfo layoutInfo{.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
+	VkPipelineLayoutCreateInfo layoutInfo{
+		.sType =
+			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
 
-	VkDescriptorSetLayout descriptors[2] = {Renderer::get()->renderData.globalDescriptorLayout,
-											descriptorSetLayout};
+	VkDescriptorSetLayout descriptors[2] = {
+		Renderer::get()
+			->renderData.globalDescriptorLayout,
+		descriptorSetLayout};
 
 	layoutInfo.setLayoutCount = 2;
 	layoutInfo.pSetLayouts = descriptors;
 
-	VKTRY(vkCreatePipelineLayout(render->device, &layoutInfo, nullptr, &pipelineLayout));
+	VKTRY(
+		vkCreatePipelineLayout(render->device,
+							   &layoutInfo,
+							   nullptr,
+							   &pipelineLayout));
 
-	std::vector<uint8_t> vertexShaderData = loadBinaryFile("res/shaders/test.vert.spv");
-	std::vector<uint8_t> fragmentShaderData = loadBinaryFile("res/shaders/test.frag.spv");
+	std::vector<uint8_t> vertexShaderData =
+		loadBinaryFile(
+			"res/shaders/test.vert.spv");
+	std::vector<uint8_t> fragmentShaderData =
+		loadBinaryFile(
+			"res/shaders/test.frag.spv");
 
 	vk::GraphicsPipelineBuilder pipelineBuilder;
 
-	auto vertexShader = vk::createShaderModule(render->device, vertexShaderData);
-	auto fragmentShader = vk::createShaderModule(render->device, fragmentShaderData);
+	auto vertexShader = vk::createShaderModule(
+		render->device, vertexShaderData);
+	auto fragmentShader = vk::createShaderModule(
+		render->device, fragmentShaderData);
 
 	//use the triangle layout we created
-	pipelineBuilder._pipelineLayout = pipelineLayout;
+	pipelineBuilder._pipelineLayout =
+		pipelineLayout;
 	//connecting the vertex and pixel shaders to the pipeline
-	pipelineBuilder.set_shaders(vertexShader, fragmentShader);
+	pipelineBuilder.set_shaders(vertexShader,
+								fragmentShader);
 	//it will draw triangles
-	pipelineBuilder.set_input_topology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+	pipelineBuilder.set_input_topology(
+		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
 	//filled triangles
-	pipelineBuilder.set_polygon_mode(VK_POLYGON_MODE_FILL);
+	pipelineBuilder.set_polygon_mode(
+		VK_POLYGON_MODE_FILL);
 	//no backface culling
-	pipelineBuilder.set_cull_mode(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE);
+	pipelineBuilder.set_cull_mode(
+		VK_CULL_MODE_BACK_BIT,
+		VK_FRONT_FACE_COUNTER_CLOCKWISE);
 	//no multisampling
 	pipelineBuilder.set_multisampling_none();
 	//no blending
 	pipelineBuilder.disable_blending();
 	//no depth testing
-	pipelineBuilder.set_depth_format(VK_FORMAT_D32_SFLOAT);
+	pipelineBuilder.set_depth_format(
+		VK_FORMAT_D32_SFLOAT);
 	pipelineBuilder.enable_depthtest();
 
-	VkFormat colorFormats[3] = {
-		VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_R8G8B8A8_UNORM};
+	VkFormat colorFormats[4] = {
+		VK_FORMAT_R8G8B8A8_UNORM,
+		VK_FORMAT_R8G8B8A8_UNORM,
+		VK_FORMAT_R8G8B8A8_UNORM,
+		VK_FORMAT_R32G32B32A32_SFLOAT};
 
 	//connect the image format we will draw into, from draw image
-	pipelineBuilder.set_color_attachment_format(std::span(colorFormats));
+	pipelineBuilder.set_color_attachment_format(
+		std::span(colorFormats));
 
 	//finally build the pipeline
-	pipeline = pipelineBuilder.buildPipeline(render->device);
+	pipeline = pipelineBuilder.buildPipeline(
+		render->device);
 
 	//clean structures
-	vkDestroyShaderModule(render->device, fragmentShader, nullptr);
-	vkDestroyShaderModule(render->device, vertexShader, nullptr);
+	vkDestroyShaderModule(
+		render->device, fragmentShader, nullptr);
+	vkDestroyShaderModule(
+		render->device, vertexShader, nullptr);
 }
 
 void ChunkRenderer::regenerateChunks()
@@ -314,10 +501,15 @@ void ChunkRenderer::regenerateChunks()
 	}
 
 	vk::StagingBuffer staging;
-	staging.create(render->device, render->vma, numChunks * sizeof(ChunkDataBuffer));
+	staging.create(render->device,
+				   render->vma,
+				   numChunks *
+					   sizeof(ChunkDataBuffer));
 	staging.write<ChunkDataBuffer>(data);
 	render->bufferWritter.writeToSSBO(
-		staging.data.buffer, &chunksDataBuffer, numChunks * sizeof(ChunkDataBuffer));
+		staging.data.buffer,
+		&chunksDataBuffer,
+		numChunks * sizeof(ChunkDataBuffer));
 
 	staging.destroy(&render->frameDeletionQueue);
 }
@@ -329,9 +521,14 @@ void ChunkRenderer::destroy()
 
 	vk::DeletionQueue deletion;
 
-	vkDestroyPipeline(render->device, pipeline, nullptr);
-	vkDestroyPipelineLayout(render->device, pipelineLayout, nullptr);
-	vkDestroyDescriptorSetLayout(render->device, descriptorSetLayout, nullptr);
+	vkDestroyPipeline(
+		render->device, pipeline, nullptr);
+	vkDestroyPipelineLayout(
+		render->device, pipelineLayout, nullptr);
+	vkDestroyDescriptorSetLayout(
+		render->device,
+		descriptorSetLayout,
+		nullptr);
 
 	for(auto* chunk : chunks)
 	{
@@ -343,25 +540,39 @@ void ChunkRenderer::destroy()
 	chunkDrawCommands.destroy(&deletion);
 	chunksDataBuffer.destroy(&deletion);
 
-	deletion.deleteQueue(render->device, render->vma);
+	deletion.deleteQueue(render->device,
+						 render->vma);
 }
 
-ChunkData* ChunkRenderer ::loadChunk(glm::vec3 position, std::span<ChunkFaceData> data)
+ChunkData* ChunkRenderer ::loadChunk(
+	glm::vec3 position,
+	std::span<ChunkFaceData> data)
 {
 	auto* chunk = new ChunkData;
 	auto* render = Renderer::get();
 
 	chunk->position = position;
-	chunk->vertexData.create(render->device, render->vma, sizeof(ChunkFaceData) * data.size());
+	chunk->vertexData.create(
+		render->device,
+		render->vma,
+		sizeof(ChunkFaceData) * data.size());
 	vk::StagingBuffer staging;
-	staging.create(render->device, render->vma, sizeof(ChunkFaceData) * data.size());
+	staging.create(render->device,
+				   render->vma,
+				   sizeof(ChunkFaceData) *
+					   data.size());
 	staging.write(data);
-	render->bufferWritter.writeToSSBO(staging.data.buffer, &chunk->vertexData);
+	render->bufferWritter.writeToSSBO(
+		staging.data.buffer, &chunk->vertexData);
 	staging.destroy(&render->frameDeletionQueue);
 	chunk->numVertices = data.size() * 6;
-	VkBufferDeviceAddressInfo addrInfo{.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO};
-	addrInfo.buffer = chunk->vertexData.data.buffer;
-	chunk->vertexAddr = vkGetBufferDeviceAddress(render->device, &addrInfo);
+	VkBufferDeviceAddressInfo addrInfo{
+		.sType =
+			VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO};
+	addrInfo.buffer =
+		chunk->vertexData.data.buffer;
+	chunk->vertexAddr = vkGetBufferDeviceAddress(
+		render->device, &addrInfo);
 
 	chunks.insert(chunk);
 	return chunk;
@@ -371,7 +582,8 @@ void ChunkRenderer::deleteChunk(ChunkData* chunk)
 {
 	if(chunks.contains(chunk))
 	{
-		chunk->vertexData.destroy(&Renderer::get()->frameDeletionQueue);
+		chunk->vertexData.destroy(
+			&Renderer::get()->frameDeletionQueue);
 		chunks.erase(chunk);
 		delete chunk;
 	}
@@ -381,7 +593,8 @@ void ChunkRenderer::clearData()
 {
 	for(auto* chunk : chunks)
 	{
-		chunk->vertexData.destroy(&Renderer::get()->frameDeletionQueue);
+		chunk->vertexData.destroy(
+			&Renderer::get()->frameDeletionQueue);
 		delete chunk;
 	}
 	chunks.clear();
@@ -392,63 +605,103 @@ void ChunkRenderer::render(VkCommandBuffer cmd)
 	if(chunks.size() <= 0)
 		return;
 
-	chunkDrawCommands.barrier(cmd,
-							  VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
-							  VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-							  VK_ACCESS_SHADER_READ_BIT,
-							  VK_ACCESS_SHADER_WRITE_BIT);
+	chunkDrawCommands.barrier(
+		cmd,
+		VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+		VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+		VK_ACCESS_SHADER_READ_BIT,
+		VK_ACCESS_SHADER_WRITE_BIT);
 	dispatcher.dispatch(cmd, chunks.size());
-	chunkDrawCommands.barrier(cmd,
-							  VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-							  VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
-							  VK_ACCESS_SHADER_WRITE_BIT,
-							  VK_ACCESS_SHADER_READ_BIT);
+	chunkDrawCommands.barrier(
+		cmd,
+		VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+		VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
+		VK_ACCESS_SHADER_WRITE_BIT,
+		VK_ACCESS_SHADER_READ_BIT);
 
 	auto render = Renderer::get();
 	render->textureAtlas.transition(
-		cmd, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		cmd,
+		VK_IMAGE_LAYOUT_UNDEFINED,
+		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	auto* backbuffer = render->getBackbuffer();
-	auto* deferredBuffers = &render->deferredBuffers;
+	auto* deferredBuffers =
+		&render->deferredBuffers;
 
-	VkRenderingAttachmentInfo colorAttachments[3];
+	VkRenderingAttachmentInfo colorAttachments[4];
 	VkClearValue clearVal;
 	clearVal.color.float32[0] = 0;
 	clearVal.color.float32[1] = 0;
 	clearVal.color.float32[2] = 0;
 	clearVal.color.float32[3] = 0;
 	colorAttachments[0] = vk::Init::attachementInfo(
-		deferredBuffers->albedo.imageView, &clearVal, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+		deferredBuffers->albedo.imageView,
+		&clearVal,
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
 	colorAttachments[1] = vk::Init::attachementInfo(
-		deferredBuffers->normal.imageView, &clearVal, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+		deferredBuffers->normal.imageView,
+		&clearVal,
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
 	colorAttachments[2] = vk::Init::attachementInfo(
-		deferredBuffers->material.imageView, &clearVal, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+		deferredBuffers->material.imageView,
+		&clearVal,
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+	colorAttachments[3] = vk::Init::attachementInfo(
+		deferredBuffers->pos.imageView,
+		&clearVal,
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
 	VkClearValue clearValue{};
 	clearValue.depthStencil.depth = 1;
-	auto depthAttachment = vk::Init::attachementInfo(deferredBuffers->depthBuffer.imageView,
-													 &clearValue,
-													 VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+	auto depthAttachment = vk::Init::attachementInfo(
+		deferredBuffers->depthBuffer.imageView,
+		&clearValue,
+		VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
-	VkRenderingInfo renderInfo = {.sType = VK_STRUCTURE_TYPE_RENDERING_INFO};
+	VkRenderingInfo renderInfo = {
+		.sType =
+			VK_STRUCTURE_TYPE_RENDERING_INFO};
 
-	renderInfo.renderArea = {{0, 0}, render->screenExtent};
-	renderInfo.colorAttachmentCount = 3;
-	renderInfo.pColorAttachments = colorAttachments;
-	renderInfo.pDepthAttachment = &depthAttachment;
+	renderInfo.renderArea = {
+		{0, 0}, render->screenExtent};
+	renderInfo.colorAttachmentCount = 4;
+	renderInfo.pColorAttachments =
+		colorAttachments;
+	renderInfo.pDepthAttachment =
+		&depthAttachment;
 	renderInfo.pStencilAttachment = 0;
 	renderInfo.layerCount = 1;
 	vkCmdBeginRendering(cmd, &renderInfo);
 
-	auto globalDescriptor = Renderer::get()->renderData.getGlobalDescriptor();
+	auto globalDescriptor =
+		Renderer::get()
+			->renderData.getGlobalDescriptor();
 
 	vkCmdBindDescriptorSets(
-		cmd, (VkPipelineBindPoint)0, pipelineLayout, 0, 1, &globalDescriptor, 0, 0);
+		cmd,
+		(VkPipelineBindPoint)0,
+		pipelineLayout,
+		0,
+		1,
+		&globalDescriptor,
+		0,
+		0);
 	vkCmdBindDescriptorSets(
-		cmd, (VkPipelineBindPoint)0, pipelineLayout, 1, 1, &descriptorSet, 0, 0);
+		cmd,
+		(VkPipelineBindPoint)0,
+		pipelineLayout,
+		1,
+		1,
+		&descriptorSet,
+		0,
+		0);
 
-	vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+	vkCmdBindPipeline(
+		cmd,
+		VK_PIPELINE_BIND_POINT_GRAPHICS,
+		pipeline);
 
 	VkViewport viewport = {};
 	viewport.x = 0;
@@ -463,18 +716,21 @@ void ChunkRenderer::render(VkCommandBuffer cmd)
 	VkRect2D scissor = {};
 	scissor.offset.x = 0;
 	scissor.offset.y = 0;
-	scissor.extent.width = backbuffer->extent.width;
-	scissor.extent.height = backbuffer->extent.height;
+	scissor.extent.width =
+		backbuffer->extent.width;
+	scissor.extent.height =
+		backbuffer->extent.height;
 
 	vkCmdSetScissor(cmd, 0, 1, &scissor);
 
-	vkCmdDrawIndirectCount(cmd,
-						   chunkDrawCommands.data.buffer,
-						   0,
-						   dispatcher.dispatchBuffer.data.buffer,
-						   0,
-						   chunks.size(),
-						   sizeof(VkDrawIndirectCommand));
+	vkCmdDrawIndirectCount(
+		cmd,
+		chunkDrawCommands.data.buffer,
+		0,
+		dispatcher.dispatchBuffer.data.buffer,
+		0,
+		chunks.size(),
+		sizeof(VkDrawIndirectCommand));
 
 	vkCmdEndRendering(cmd);
 }

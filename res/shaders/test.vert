@@ -3,6 +3,7 @@
 
 layout (location=0) out vec3 outUv;
 layout (location=1) out vec3 outNorm;
+layout (location=2) out vec3 outPos;
 
 struct ChunkFace {
 	uint posAndFace;
@@ -57,4 +58,5 @@ void main()
 	gl_Position = ubo.projView * vec4((chunk.position.xyz + vec3(x, y, z) + vertex.pos), 1);
 	outUv = vec3(vertex.uv, face.textureId);
 	outNorm = vertex.norm;
+	outPos = gl_Position.xyz;
 }

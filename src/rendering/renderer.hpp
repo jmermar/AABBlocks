@@ -1,6 +1,7 @@
 #pragma once
 #include "buffer_writter.hpp"
 #include "command_buffer.hpp"
+#include "debug.hpp"
 #include "glm/glm.hpp"
 #include "mapped_buffer.hpp"
 #include "types.hpp"
@@ -53,20 +54,7 @@ struct RenderState
 	Camera camera{};
 	Camera cullCamera{};
 
-	enum DebugRenderBuffer
-	{
-		NOTHING,
-		DEPTH,
-		ALBEDO,
-		NORMAL,
-		MATERIAL,
-		POSITION
-	};
-
-	struct
-	{
-		DebugRenderBuffer renderBuffer = NOTHING;
-	} debug;
+	bool drawDebug{};
 };
 
 constexpr unsigned int FRAME_OVERLAP = 2;
@@ -77,7 +65,8 @@ struct FrameData
 	VkFence renderFence;
 
 	VkCommandPool commandPool;
-	std::unique_ptr<CommandBuffer> mainCommandBuffer;
+	std::unique_ptr<CommandBuffer>
+		mainCommandBuffer;
 
 	vk::DeletionQueue deletionQueue;
 };
@@ -88,16 +77,21 @@ struct DeferredBuffers
 	vk::Texture2D albedo;
 	vk::Texture2D normal;
 	vk::Texture2D material;
+	vk::Texture2D pos;
 
-	void create(VkDevice device, VmaAllocator vma, VkExtent2D size);
+	void create(VkDevice device,
+				VmaAllocator vma,
+				VkExtent2D size);
 	void destroy(vk::DeletionQueue* deletion);
 };
 
 struct GlobalRenderData
 {
 	vk::DescriptorAllocator allocator{};
-	VkDescriptorSetLayout globalDescriptorLayout{};
-	VkDescriptorSet globalDescriptors[FRAME_OVERLAP]{};
+	VkDescriptorSetLayout
+		globalDescriptorLayout{};
+	VkDescriptorSet
+		globalDescriptors[FRAME_OVERLAP]{};
 	MappedBuffer globalBuffer{};
 
 	void create();
@@ -119,31 +113,35 @@ struct Renderer
 	uint32_t graphicsQueueFamily;
 	VkPhysicalDeviceProperties props;
 
-	VkSwapchainKHR swapchain{};
-	std::vector<VkImage> swapchainImages{};
-	std::vector<VkImageView> swapchainImageViews{};
-	std::vector<VkSemaphore> renderSemaphores{};
-	VkFormat swapchainImageFormat{};
-
-	VkExtent2D screenExtent{};
-	GlobalRenderData renderData{};
-
+	// Deletion
 	vk::DeletionQueue mainDeletionQueue;
 	vk::DeletionQueue frameDeletionQueue;
 
 	FrameData frames[FRAME_OVERLAP];
 
+	// Swapchain
+	VkSwapchainKHR swapchain{};
+	std::vector<VkImage> swapchainImages{};
+	std::vector<VkImageView>
+		swapchainImageViews{};
+	std::vector<VkSemaphore> renderSemaphores{};
+	VkFormat swapchainImageFormat{};
+
 	BufferWritter bufferWritter;
 
+	// Data
+	VkExtent2D screenExtent{};
+	GlobalRenderData renderData{};
+	RenderState state;
+
+	// Buffers and textures
 	vk::Texture2D backbuffer;
-
 	DeferredBuffers deferredBuffers;
-
-	WorldRenderer worldRenderer;
-
 	vk::Texture2DArray textureAtlas{};
 
-	RenderState state;
+	// Renderers
+	WorldRenderer worldRenderer;
+	DebugRenderer debugRenderer;
 
 	struct
 	{
@@ -159,7 +157,10 @@ struct Renderer
 	void cleanup();
 
 	void renderLogic(CommandBuffer* cmd);
-	void renderImGUI(VkCommandBuffer cmd, VkImageView targetImageView);
+	void renderImGUI(VkCommandBuffer cmd,
+					 VkImageView targetImageView);
+
+	void imGUIDefaultRender();
 
 	void initRenderers();
 
@@ -167,9 +168,11 @@ struct Renderer
 	{
 		for(size_t i = 0; i < FRAME_OVERLAP; i++)
 		{
-			frames[i].deletionQueue.deleteQueue(device, vma);
+			frames[i].deletionQueue.deleteQueue(
+				device, vma);
 		}
-		frameDeletionQueue.deleteQueue(device, vma);
+		frameDeletionQueue.deleteQueue(device,
+									   vma);
 	}
 
 	static Renderer* renderInstance;
@@ -191,9 +194,11 @@ struct Renderer
 	{
 		renderInstance = this;
 		frameNumber = 0;
-		vkGetPhysicalDeviceProperties(chosenGPU, &props);
+		vkGetPhysicalDeviceProperties(chosenGPU,
+									  &props);
 		initVMA();
-		textureAtlas = loadTexture2DArray("res/textures/atlas.png", 16, 16);
+		textureAtlas = loadTexture2DArray(
+			"res/textures/atlas.png", 16, 16);
 		recreateSwapchain(w, h);
 		initCommands();
 		initSyncStructures();
@@ -220,11 +225,13 @@ struct Renderer
 
 	FrameData& getCurrentFrame()
 	{
-		return frames[frameNumber % FRAME_OVERLAP];
+		return frames[frameNumber %
+					  FRAME_OVERLAP];
 	};
 
 	vk::Texture2D loadTexture2D(const char* path);
-	vk::Texture2DArray loadTexture2DArray(const char* path, int ncols, int nrows);
+	vk::Texture2DArray loadTexture2DArray(
+		const char* path, int ncols, int nrows);
 
 	vk::Texture2D* getBackbuffer()
 	{

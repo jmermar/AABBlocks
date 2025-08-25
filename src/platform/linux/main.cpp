@@ -5,7 +5,6 @@
 #include "rendering/renderer.hpp"
 #include "scenes/scene_mainmenu.hpp"
 #include "scenes/scene_world.hpp"
-#include "utils/debug.hpp"
 #include "world/world.hpp"
 #include <SDL3/SDL.h>
 #include <backends/imgui_impl_sdl3.h>
@@ -44,7 +43,8 @@ std::atomic<SceneState> sceneState;
 std::atomic<bool> running;
 
 constexpr uint32_t TICKS_PER_SECOND = 50;
-constexpr float PHYSIQS_DELTA = 1.f / TICKS_PER_SECOND;
+constexpr float PHYSIQS_DELTA =
+	1.f / TICKS_PER_SECOND;
 
 void fixedLoop()
 {
@@ -75,17 +75,21 @@ int main(int argc, char** argv)
 	gameData.screen.width = 1920;
 	gameData.screen.height = 1080;
 
-	system = initSystemLinux("Vulkan App", gameData.screen.width, gameData.screen.height);
+	system =
+		initSystemLinux("Vulkan App",
+						gameData.screen.width,
+						gameData.screen.height);
 	auto imguiInstance = initImgui(system);
 
-	auto* renderer = new render::Renderer(system.instance,
-										  system.chosenGPU,
-										  system.device,
-										  system.surface,
-										  system.graphicsQueue,
-										  system.graphicsQueueFamily,
-										  gameData.screen.width,
-										  gameData.screen.height);
+	auto* renderer = new render::Renderer(
+		system.instance,
+		system.chosenGPU,
+		system.device,
+		system.surface,
+		system.graphicsQueue,
+		system.graphicsQueueFamily,
+		gameData.screen.width,
+		gameData.screen.height);
 
 	running = true;
 	auto ticks = SDL_GetTicks();
@@ -95,8 +99,10 @@ int main(int argc, char** argv)
 	render::RenderState renderState{};
 	renderState.camera.fov = 45;
 	renderState.camera.aspect = 1920.f / 1080.f;
-	renderState.camera.position = glm::vec3(50, 20, 50);
-	renderState.camera.forward = glm::vec3(0, 0, 1);
+	renderState.camera.position =
+		glm::vec3(50, 20, 50);
+	renderState.camera.forward =
+		glm::vec3(0, 0, 1);
 	renderState.cullCamera = renderState.camera;
 	uint64_t frameDelta = 0;
 	float deltaTime = 0;
@@ -109,7 +115,9 @@ int main(int argc, char** argv)
 
 	while(running)
 	{
-		input_Update(system.window, gameData.screen.width, gameData.screen.height);
+		input_Update(system.window,
+					 gameData.screen.width,
+					 gameData.screen.height);
 		SDL_Event e;
 		while(SDL_PollEvent(&e))
 		{
@@ -121,11 +129,16 @@ int main(int argc, char** argv)
 			case SDL_EVENT_WINDOW_RESIZED: {
 				auto iw = e.window.data1;
 				auto ih = e.window.data2;
-				renderer->recreateSwapchain(gameData.screen.width, gameData.screen.height);
-				gameData.screen.width = (uint32_t)iw;
-				gameData.screen.height = (uint32_t)ih;
+				renderer->recreateSwapchain(
+					gameData.screen.width,
+					gameData.screen.height);
+				gameData.screen.width =
+					(uint32_t)iw;
+				gameData.screen.height =
+					(uint32_t)ih;
 				renderState.camera.aspect =
-					(float)gameData.screen.width / (float)gameData.screen.height;
+					(float)gameData.screen.width /
+					(float)gameData.screen.height;
 			}
 			break;
 			}
@@ -133,12 +146,16 @@ int main(int argc, char** argv)
 			ImGui_ImplSDL3_ProcessEvent(&e);
 		}
 
+		renderState.drawDebug = true;
+
 		ImGui_ImplVulkan_NewFrame();
 		ImGui_ImplSDL3_NewFrame();
 
 		ImGui::NewFrame();
-		ImGui::Text("FPS: %f", 1000.f / frameDelta);
-		renderState.debug.renderBuffer = debugGetRenderBuffer();
+		ImGui::Text("FPS: %f",
+					1000.f / frameDelta);
+
+		renderer->imGUIDefaultRender();
 
 		if(sceneState == SCENE_STATE_MAINMENU)
 		{
@@ -154,7 +171,8 @@ int main(int argc, char** argv)
 			{
 				sceneState = SCENE_STATE_MAINMENU;
 				scenes::sceneWorld_Finish();
-				renderer->worldRenderer.clearWorld();
+				renderer->worldRenderer
+					.clearWorld();
 				scenes::sceneMainmenu_Init();
 			}
 		}
@@ -163,7 +181,8 @@ int main(int argc, char** argv)
 
 		if(sceneState == SCENE_STATE_WORLD)
 		{
-			scenes::sceneWorld_Update(deltaTime, renderState);
+			scenes::sceneWorld_Update(
+				deltaTime, renderState);
 		}
 
 		renderer->renderFrame(renderState);
