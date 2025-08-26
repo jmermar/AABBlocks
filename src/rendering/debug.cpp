@@ -84,7 +84,7 @@ void DebugRenderer::render(VkCommandBuffer cmd)
 
 		deferredBuffers->pos.transition(
 			cmd,
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+			VK_IMAGE_LAYOUT_UNDEFINED,
 			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 		vk::copyImageToImage(
 			cmd,
@@ -107,7 +107,7 @@ void DebugRenderer::render(VkCommandBuffer cmd)
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 		deferredBuffers->albedo.transition(
 			cmd,
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+			VK_IMAGE_LAYOUT_UNDEFINED,
 			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 		vk::copyImageToImage(
 			cmd,
@@ -131,7 +131,7 @@ void DebugRenderer::render(VkCommandBuffer cmd)
 
 		deferredBuffers->normal.transition(
 			cmd,
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+			VK_IMAGE_LAYOUT_UNDEFINED,
 			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 		vk::copyImageToImage(
 			cmd,
@@ -155,7 +155,7 @@ void DebugRenderer::render(VkCommandBuffer cmd)
 
 		deferredBuffers->material.transition(
 			cmd,
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+			VK_IMAGE_LAYOUT_UNDEFINED,
 			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 		vk::copyImageToImage(
 			cmd,

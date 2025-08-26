@@ -15,7 +15,7 @@ layout (set = 1, binding = 0) uniform sampler2DArray atlas;
 void main() 
 {
 	outAlbedo = texture(atlas, inUv);
-	outNormal = vec4(inNorm, 0);
+	outNormal = vec4(inNorm * 0.5 + vec3(0.5), 1);
 	outMaterial = vec4(1);
 	outPos = vec4(inPos, 0);
 }

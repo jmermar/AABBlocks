@@ -46,38 +46,14 @@ void WorldRenderer::create()
 {
 	initDescriptorPool();
 
-	chunkRenderer.create(&descriptorAllocator);
+	chunkRenderer.create();
 }
 
 void WorldRenderer::destroy()
 {
-	auto* render = Renderer::get();
 	chunkRenderer.destroy();
-	vkDestroyDescriptorPool(
-		render->device,
-		descriptorAllocator.pool,
-		nullptr);
 }
 
-void WorldRenderer::initDescriptorPool()
-{
-	auto* render = Renderer::get();
-	std::vector<
-		vk::DescriptorAllocator::PoolSizeRatio>
-		ratios;
-	ratios.resize(3);
-	ratios[0].type =
-		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	ratios[0].ratio = 1;
-	ratios[1].type =
-		VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-	ratios[1].ratio = 1;
-	ratios[2].type =
-		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	ratios[2].ratio = 1;
-
-	descriptorAllocator.initPool(
-		render->device, 8, ratios);
-}
+void WorldRenderer::initDescriptorPool() { }
 } // namespace render
 } // namespace vblck

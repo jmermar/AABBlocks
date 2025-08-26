@@ -51,8 +51,7 @@ void ChunkDrawCommandsDispatcher::createBuffers()
 }
 
 void ChunkDrawCommandsDispatcher::
-	createDescriptors(
-		vk::DescriptorAllocator* allocator)
+	createDescriptors()
 {
 	auto* render = Renderer::get();
 	auto* chunkRenderer =
@@ -68,32 +67,33 @@ void ChunkDrawCommandsDispatcher::
 		Renderer::get()->device,
 		VK_SHADER_STAGE_COMPUTE_BIT);
 
-	descriptorSet = allocator->allocate(
-		Renderer::get()->device,
+	descriptorSet = render->allocateDescriptor(
 		descriptorSetLayout);
 
-	vk::DescriptorWritter::writeBuffer(
-		render->device,
-		descriptorSet,
+	vk::DescriptorWriter writer{};
+	writer.startWrites(3);
+	writer.writeBuffer(
 		0,
 		chunkRenderer->chunksDataBuffer.data
 			.buffer,
-		chunkRenderer->chunksDataBuffer.size);
-
-	vk::DescriptorWritter::writeBuffer(
-		render->device,
-		descriptorSet,
+		chunkRenderer->chunksDataBuffer.size,
+		0,
+		VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+	writer.writeBuffer(
 		1,
 		chunkRenderer->chunkDrawCommands.data
 			.buffer,
-		chunkRenderer->chunkDrawCommands.size);
-
-	vk::DescriptorWritter::writeBuffer(
-		render->device,
-		descriptorSet,
+		chunkRenderer->chunkDrawCommands.size,
+		0,
+		VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+	writer.writeBuffer(
 		2,
 		dispatchBuffer.data.buffer,
-		dispatchBuffer.size);
+		dispatchBuffer.size,
+		0,
+		VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+
+	writer.write(render->device, descriptorSet);
 }
 
 void ChunkDrawCommandsDispatcher::createPipeline()
@@ -289,8 +289,7 @@ Face precomputedVerticesData[6] = {
 
 };
 
-void ChunkRenderer::createDescriptors(
-	vk::DescriptorAllocator* allocator)
+void ChunkRenderer::createDescriptors()
 {
 	auto* render = Renderer::get();
 
@@ -306,67 +305,26 @@ void ChunkRenderer::createDescriptors(
 		Renderer::get()->device,
 		VK_SHADER_STAGE_ALL_GRAPHICS);
 
-	descriptorSet = allocator->allocate(
-		Renderer::get()->device,
+	descriptorSet = render->allocateDescriptor(
 		descriptorSetLayout);
 
-	VkDescriptorImageInfo imageInfo{};
-	imageInfo.imageLayout =
-		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-	imageInfo.imageView =
-		render->textureAtlas.imageView;
-	imageInfo.sampler =
-		render->textureAtlas.sampler;
-
-	VkDescriptorBufferInfo bufferInfo;
-	bufferInfo.buffer =
-		precomputedVertices.data.buffer;
-	bufferInfo.offset = 0;
-	bufferInfo.range = precomputedVertices.size;
-
-	VkWriteDescriptorSet writeDescriptorSet{
-		.sType =
-			VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
-	writeDescriptorSet.dstSet = descriptorSet;
-	writeDescriptorSet.descriptorCount = 1;
-	writeDescriptorSet.dstBinding = 0;
-	writeDescriptorSet.dstArrayElement = 0;
-	writeDescriptorSet.descriptorType =
-		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	writeDescriptorSet.pImageInfo = &imageInfo;
-	vkUpdateDescriptorSets(render->device,
-						   1,
-						   &writeDescriptorSet,
-						   0,
-						   0);
-	writeDescriptorSet.dstBinding = 1;
-	writeDescriptorSet.dstArrayElement = 0;
-	writeDescriptorSet.descriptorType =
-		VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-	writeDescriptorSet.pBufferInfo = &bufferInfo;
-	writeDescriptorSet.pImageInfo = 0;
-	vkUpdateDescriptorSets(render->device,
-						   1,
-						   &writeDescriptorSet,
-						   0,
-						   0);
-
-	bufferInfo.buffer =
-		chunksDataBuffer.data.buffer;
-	bufferInfo.offset = 0;
-	bufferInfo.range = chunksDataBuffer.size;
-
-	writeDescriptorSet.dstBinding = 2;
-	writeDescriptorSet.dstArrayElement = 0;
-	writeDescriptorSet.descriptorType =
-		VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-	writeDescriptorSet.pBufferInfo = &bufferInfo;
-	writeDescriptorSet.pImageInfo = 0;
-	vkUpdateDescriptorSets(render->device,
-						   1,
-						   &writeDescriptorSet,
-						   0,
-						   0);
+	vk::DescriptorWriter writer;
+	writer.startWrites(3);
+	writer.writeImage(
+		0,
+		render->textureAtlas.imageView,
+		render->textureAtlas.sampler);
+	writer.writeBuffer(
+		1,
+		precomputedVertices.data.buffer,
+		precomputedVertices.size,
+		0);
+	writer.writeBuffer(
+		2,
+		chunksDataBuffer.data.buffer,
+		chunksDataBuffer.size,
+		0);
+	writer.write(render->device, descriptorSet);
 }
 void ChunkRenderer::createBuffers()
 {

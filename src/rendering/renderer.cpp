@@ -37,38 +37,18 @@ void GlobalRenderData::create()
 
 	globalBuffer.create(
 		sizeof(UniformGlobalData));
-	std::vector<
-		vk::DescriptorAllocator::PoolSizeRatio>
-		ratios;
-	ratios.resize(3);
-	ratios[0].type =
-		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	ratios[0].ratio = 1;
-	ratios[1].type =
-		VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-	ratios[1].ratio = 1;
-	ratios[2].type =
-		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	ratios[2].ratio = 1;
-
-	allocator.initPool(
-		Renderer::get()->device, 8, ratios);
 
 	for(size_t i = 0; i < FRAME_OVERLAP; i++)
 	{
-		globalDescriptors[i] = allocator.allocate(
-			Renderer::get()->device,
-			globalDescriptorLayout);
+		globalDescriptors[i] =
+			Renderer::get()->allocateDescriptor(
+				globalDescriptorLayout);
 	}
 }
 
 void GlobalRenderData::destroy()
 {
 	globalBuffer.destroy();
-	vkDestroyDescriptorPool(
-		Renderer::get()->device,
-		allocator.pool,
-		nullptr);
 	vkDestroyDescriptorSetLayout(
 		Renderer::get()->device,
 		globalDescriptorLayout,
@@ -85,26 +65,17 @@ GlobalRenderData::getGlobalDescriptor()
 void GlobalRenderData::writeDescriptors(
 	VkCommandBuffer cmd)
 {
-	VkDescriptorBufferInfo bufferInfo{};
-	bufferInfo.buffer =
-		globalBuffer.buffer.buffer;
-	bufferInfo.offset = globalBuffer.getBaseAddr(
-		Renderer::get()->getFrameIndex());
-	bufferInfo.range = globalBuffer.alignedSize;
-
-	VkWriteDescriptorSet write = {
-		.sType =
-			VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
-	write.dstSet = getGlobalDescriptor();
-	write.descriptorCount = 1;
-	write.dstBinding = 0;
-	write.dstArrayElement = 0;
-	write.descriptorType =
-		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	write.pBufferInfo = &bufferInfo;
-
-	vkUpdateDescriptorSets(
-		Renderer::get()->device, 1, &write, 0, 0);
+	auto* render = Renderer::get();
+	vk::DescriptorWriter writer;
+	writer.startWrites(2);
+	writer.writeBuffer(
+		0,
+		globalBuffer.buffer.buffer,
+		globalBuffer.size,
+		0,
+		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+	writer.write(render->device,
+				 getGlobalDescriptor());
 }
 
 Renderer* Renderer::renderInstance = 0;
@@ -139,8 +110,10 @@ void Renderer::cleanup()
 {
 	vkDeviceWaitIdle(device);
 	textureAtlas.destroy(&mainDeletionQueue);
+	deferredRenderer.destroy();
 	worldRenderer.destroy();
 	renderData.destroy();
+	descriptorAllocator.destroy(device);
 	destroySwapchain();
 	deletePendingObjects();
 	mainDeletionQueue.deleteQueue(device, vma);
@@ -160,6 +133,25 @@ void Renderer::renderLogic(CommandBuffer* cmd)
 		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
 	worldRenderer.render(cmd->getCmd());
+
+	deferredBuffers.albedo.transition(
+		cmd->getCmd(),
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	deferredBuffers.normal.transition(
+		cmd->getCmd(),
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	deferredBuffers.pos.transition(
+		cmd->getCmd(),
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	deferredBuffers.material.transition(
+		cmd->getCmd(),
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+	deferredRenderer.render(cmd->getCmd());
 
 	if(state.drawDebug)
 	{
@@ -205,6 +197,7 @@ void Renderer::imGUIDefaultRender()
 void Renderer::initRenderers()
 {
 	worldRenderer.create();
+	deferredRenderer.create();
 }
 
 vk::Texture2D

@@ -9,7 +9,6 @@ namespace render
 {
 struct WorldRenderer
 {
-	vk::DescriptorAllocator descriptorAllocator;
 	ChunkRenderer chunkRenderer;
 
 	void initDescriptorPool();

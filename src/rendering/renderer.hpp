@@ -2,6 +2,7 @@
 #include "buffer_writter.hpp"
 #include "command_buffer.hpp"
 #include "debug.hpp"
+#include "deferred_renderer.hpp"
 #include "glm/glm.hpp"
 #include "mapped_buffer.hpp"
 #include "types.hpp"
@@ -57,20 +58,6 @@ struct RenderState
 	bool drawDebug{};
 };
 
-constexpr unsigned int FRAME_OVERLAP = 2;
-
-struct FrameData
-{
-	VkSemaphore swapchainSemaphore;
-	VkFence renderFence;
-
-	VkCommandPool commandPool;
-	std::unique_ptr<CommandBuffer>
-		mainCommandBuffer;
-
-	vk::DeletionQueue deletionQueue;
-};
-
 struct DeferredBuffers
 {
 	vk::DepthTexture depthBuffer;
@@ -85,9 +72,22 @@ struct DeferredBuffers
 	void destroy(vk::DeletionQueue* deletion);
 };
 
+constexpr unsigned int FRAME_OVERLAP = 2;
+
+struct FrameData
+{
+	VkSemaphore swapchainSemaphore;
+	VkFence renderFence;
+
+	VkCommandPool commandPool;
+	std::unique_ptr<CommandBuffer>
+		mainCommandBuffer;
+
+	vk::DeletionQueue deletionQueue;
+};
+
 struct GlobalRenderData
 {
-	vk::DescriptorAllocator allocator{};
 	VkDescriptorSetLayout
 		globalDescriptorLayout{};
 	VkDescriptorSet
@@ -112,6 +112,8 @@ struct Renderer
 	VmaAllocator vma{};
 	uint32_t graphicsQueueFamily;
 	VkPhysicalDeviceProperties props;
+
+	vk::DescriptorAllocator descriptorAllocator;
 
 	// Deletion
 	vk::DeletionQueue mainDeletionQueue;
@@ -140,6 +142,7 @@ struct Renderer
 	vk::Texture2DArray textureAtlas{};
 
 	// Renderers
+	DeferredRenderer deferredRenderer;
 	WorldRenderer worldRenderer;
 	DebugRenderer debugRenderer;
 
@@ -203,6 +206,23 @@ struct Renderer
 		initCommands();
 		initSyncStructures();
 
+		std::vector<vk::DescriptorAllocator::
+						PoolSizeRatio>
+			ratios;
+		ratios.resize(3);
+		ratios[0].type =
+			VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		ratios[0].ratio = 1;
+		ratios[1].type =
+			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		ratios[1].ratio = 1;
+		ratios[2].type =
+			VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		ratios[2].ratio = 1;
+
+		descriptorAllocator.create(
+			device, 100, ratios);
+
 		renderData.create();
 
 		initRenderers();
@@ -241,6 +261,13 @@ struct Renderer
 	void recreateSwapchain(int w, int h);
 
 	void renderFrame(RenderState& state);
+
+	inline VkDescriptorSet allocateDescriptor(
+		VkDescriptorSetLayout layout)
+	{
+		return descriptorAllocator.allocate(
+			device, layout);
+	}
 };
 } // namespace render
 } // namespace vblck

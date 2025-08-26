@@ -30,24 +30,25 @@ struct ChunkDrawCommandsDispatcher
 	vk::SSBO dispatchBuffer{};
 
 	void createBuffers();
-	void createDescriptors(vk::DescriptorAllocator* allocator);
+	void createDescriptors();
 	void createPipeline();
 
 	void destroy();
 
-	void create(vk::DescriptorAllocator* allocator)
+	void create()
 	{
 		createBuffers();
-		createDescriptors(allocator);
+		createDescriptors();
 		createPipeline();
 	}
 
-	void dispatch(VkCommandBuffer cmd, uint32_t nChunks);
+	void dispatch(VkCommandBuffer cmd,
+				  uint32_t nChunks);
 };
 
 struct ChunkRenderer
 {
-	VkPipelineLayout pipelineLayout;
+	VkPipelineLayout pipelineLayout{};
 	VkPipeline pipeline{};
 	VkDescriptorSetLayout descriptorSetLayout{};
 	VkDescriptorSet descriptorSet{};
@@ -60,7 +61,7 @@ struct ChunkRenderer
 
 	ChunkDrawCommandsDispatcher dispatcher;
 
-	void createDescriptors(vk::DescriptorAllocator* allocator);
+	void createDescriptors();
 	void createBuffers();
 	void createPipeline();
 
@@ -68,17 +69,19 @@ struct ChunkRenderer
 
 	void destroy();
 
-	ChunkData* loadChunk(glm::vec3 position, std::span<ChunkFaceData> data);
+	ChunkData*
+	loadChunk(glm::vec3 position,
+			  std::span<ChunkFaceData> data);
 	void deleteChunk(ChunkData* chunk);
 
 	void clearData();
 
-	void create(vk::DescriptorAllocator* allocator)
+	void create()
 	{
 		createBuffers();
-		createDescriptors(allocator);
+		createDescriptors();
 		createPipeline();
-		dispatcher.create(allocator);
+		dispatcher.create();
 	}
 
 	void render(VkCommandBuffer cmd);

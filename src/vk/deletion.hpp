@@ -15,7 +15,8 @@ struct DeletionQueue
 	std::vector<VkFence> fences;
 	std::vector<VkCommandPool> commandPools;
 
-	void deleteQueue(VkDevice device, VmaAllocator vma);
+	void deleteQueue(VkDevice device,
+					 VmaAllocator vma);
 };
 } // namespace vk
 } // namespace vblck
