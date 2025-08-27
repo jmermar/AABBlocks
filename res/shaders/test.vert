@@ -58,5 +58,5 @@ void main()
 	gl_Position = ubo.projView * vec4((chunk.position.xyz + vec3(x, y, z) + vertex.pos), 1);
 	outUv = vec3(vertex.uv, face.textureId);
 	outNorm = vertex.norm;
-	outPos = gl_Position.xyz;
+	outPos = chunk.position.xyz + vec3(x, y, z) + vertex.pos;
 }

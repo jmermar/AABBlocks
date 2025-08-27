@@ -127,7 +127,8 @@ inline void regenerateMipmaps(VkCommandBuffer cmd,
 	barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	barrier.newLayout =
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-	barrier.srcAccessMask = 0;
+	barrier.srcAccessMask =
+		VK_ACCESS_TRANSFER_WRITE_BIT;
 	barrier.dstAccessMask =
 		VK_ACCESS_TRANSFER_WRITE_BIT;
 	barrier.subresourceRange.aspectMask =
@@ -331,12 +332,15 @@ struct DepthTexture
 		imageBarrier.srcStageMask =
 			VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
 		imageBarrier.srcAccessMask =
-			VK_ACCESS_2_MEMORY_WRITE_BIT;
+			VK_ACCESS_2_MEMORY_WRITE_BIT |
+			VK_ACCESS_2_TRANSFER_WRITE_BIT;
 		imageBarrier.dstStageMask =
 			VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
 		imageBarrier.dstAccessMask =
 			VK_ACCESS_2_MEMORY_WRITE_BIT |
-			VK_ACCESS_2_MEMORY_READ_BIT;
+			VK_ACCESS_2_MEMORY_READ_BIT |
+			VK_ACCESS_2_TRANSFER_WRITE_BIT |
+			VK_ACCESS_2_TRANSFER_READ_BIT;
 
 		imageBarrier.oldLayout = currentLayout;
 		imageBarrier.newLayout = newLayout;
@@ -427,12 +431,15 @@ struct Texture2D
 		imageBarrier.srcStageMask =
 			VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
 		imageBarrier.srcAccessMask =
-			VK_ACCESS_2_MEMORY_WRITE_BIT;
+			VK_ACCESS_2_MEMORY_WRITE_BIT |
+			VK_ACCESS_2_TRANSFER_WRITE_BIT;
 		imageBarrier.dstStageMask =
 			VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
 		imageBarrier.dstAccessMask =
 			VK_ACCESS_2_MEMORY_WRITE_BIT |
-			VK_ACCESS_2_MEMORY_READ_BIT;
+			VK_ACCESS_2_MEMORY_READ_BIT |
+			VK_ACCESS_2_TRANSFER_WRITE_BIT |
+			VK_ACCESS_2_TRANSFER_READ_BIT;
 
 		imageBarrier.oldLayout = currentLayout;
 		imageBarrier.newLayout = newLayout;
@@ -559,12 +566,15 @@ struct Texture2DArray
 		imageBarrier.srcStageMask =
 			VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
 		imageBarrier.srcAccessMask =
-			VK_ACCESS_2_MEMORY_WRITE_BIT;
+			VK_ACCESS_2_MEMORY_WRITE_BIT |
+			VK_ACCESS_2_TRANSFER_WRITE_BIT;
 		imageBarrier.dstStageMask =
 			VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
 		imageBarrier.dstAccessMask =
 			VK_ACCESS_2_MEMORY_WRITE_BIT |
-			VK_ACCESS_2_MEMORY_READ_BIT;
+			VK_ACCESS_2_MEMORY_READ_BIT |
+			VK_ACCESS_2_TRANSFER_WRITE_BIT |
+			VK_ACCESS_2_TRANSFER_READ_BIT;
 
 		imageBarrier.oldLayout = currentLayout;
 		imageBarrier.newLayout = newLayout;

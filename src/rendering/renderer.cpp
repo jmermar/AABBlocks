@@ -23,6 +23,10 @@ struct alignas(16) UniformGlobalData
 	glm::mat4 viewMatrix;
 	glm::mat4 projViewMatrix;
 	Frustum camFrustum;
+	glm::vec3 camPos;
+	float ambient;
+	glm::vec3 lightDir;
+	float lightIntensity;
 };
 
 void GlobalRenderData::create()
@@ -295,16 +299,10 @@ void Renderer::recreateSwapchain(int w, int h)
 	}
 
 	backbuffer.createTexture(
-		device,
-		vma,
-		VkExtent2D{(unsigned int)w,
-				   (unsigned int)h},
-		1);
+		device, vma, screenExtent, 1);
 	deferredBuffers.create(
-		device,
-		vma,
-		VkExtent2D{(unsigned int)w,
-				   (unsigned int)h});
+		device, vma, screenExtent);
+	deferredRenderer.writeDescriptorSets();
 }
 
 void Renderer::renderFrame(RenderState& state)
@@ -363,6 +361,13 @@ void Renderer::renderFrame(RenderState& state)
 		uniformGlobalData->viewMatrix;
 	uniformGlobalData->camFrustum =
 		computedUtils.camFrustum;
+	uniformGlobalData->camPos =
+		glm::vec4(state.camera.position, 1.0f);
+	uniformGlobalData->ambient = state.ambient;
+	uniformGlobalData->lightDir =
+		state.lightDirection;
+	uniformGlobalData->lightIntensity =
+		state.lightIntensity;
 
 	cmd->begin();
 	renderData.writeDescriptors(cmd->getCmd());
@@ -370,6 +375,11 @@ void Renderer::renderFrame(RenderState& state)
 	bufferWritter.performWrites(cmd->getCmd());
 
 	renderLogic(cmd);
+
+	backbuffer.transition(
+		cmd->getCmd(),
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
 	cmd->transitionImage(
 		swapchainImages[swapchainImageIndex],

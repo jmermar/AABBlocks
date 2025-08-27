@@ -54,6 +54,9 @@ struct RenderState
 {
 	Camera camera{};
 	Camera cullCamera{};
+	float lightIntensity{1.f};
+	glm::vec3 lightDirection{0.5f, -1.f, 0.5f};
+	float ambient{0.1f};
 
 	bool drawDebug{};
 };

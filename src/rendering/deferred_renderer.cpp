@@ -36,8 +36,6 @@ void DeferredRenderer::destroy()
 void DeferredRenderer::_createDescriptors()
 {
 	auto* render = Renderer::get();
-	auto* deferredBuffers =
-		&render->deferredBuffers;
 
 	vk::DescriptorLayoutBuilder layoutBuilder;
 	layoutBuilder.addBinding(
@@ -61,30 +59,7 @@ void DeferredRenderer::_createDescriptors()
 	descriptorSet = render->allocateDescriptor(
 		descriptorSetLayout);
 
-	vk::DescriptorWriter writer;
-	writer.startWrites(5);
-	writer.writeImage(
-		0,
-		deferredBuffers->albedo.imageView,
-		deferredBuffers->albedo.sampler);
-	writer.writeImage(
-		1,
-		deferredBuffers->normal.imageView,
-		deferredBuffers->normal.sampler);
-	writer.writeImage(
-		2,
-		deferredBuffers->pos.imageView,
-		deferredBuffers->pos.sampler);
-	writer.writeImage(
-		3,
-		deferredBuffers->material.imageView,
-		deferredBuffers->material.sampler);
-	writer.writeBuffer(4,
-					   vertices.data.buffer,
-					   vertices.size,
-					   0);
-
-	writer.write(render->device, descriptorSet);
+	writeDescriptorSets();
 }
 
 void DeferredRenderer::render(VkCommandBuffer cmd)
@@ -162,6 +137,42 @@ void DeferredRenderer::render(VkCommandBuffer cmd)
 
 	vkCmdDraw(cmd, 6, 1, 0, 0);
 	vkCmdEndRendering(cmd);
+}
+void DeferredRenderer::writeDescriptorSets()
+{
+	// If called from first swapchain recreation
+	// before have been properly constructed
+	if(!descriptorSet)
+	{
+		return;
+	}
+	auto* render = Renderer::get();
+	auto* deferredBuffers =
+		&render->deferredBuffers;
+	vk::DescriptorWriter writer;
+	writer.startWrites(5);
+	writer.writeImage(
+		0,
+		deferredBuffers->albedo.imageView,
+		deferredBuffers->albedo.sampler);
+	writer.writeImage(
+		1,
+		deferredBuffers->normal.imageView,
+		deferredBuffers->normal.sampler);
+	writer.writeImage(
+		2,
+		deferredBuffers->pos.imageView,
+		deferredBuffers->pos.sampler);
+	writer.writeImage(
+		3,
+		deferredBuffers->material.imageView,
+		deferredBuffers->material.sampler);
+	writer.writeBuffer(4,
+					   vertices.data.buffer,
+					   vertices.size,
+					   0);
+
+	writer.write(render->device, descriptorSet);
 }
 void DeferredRenderer::_createPipeline()
 {

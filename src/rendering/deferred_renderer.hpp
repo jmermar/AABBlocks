@@ -25,6 +25,8 @@ struct DeferredRenderer
 
 	void render(VkCommandBuffer cmd);
 
+	void writeDescriptorSets();
+
 	void _createDescriptors();
 	void _createPipeline();
 	void _createBuffers();
