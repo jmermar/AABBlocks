@@ -300,6 +300,8 @@ struct DepthTexture
 	VkImageView imageView{};
 	VkExtent2D extent{};
 	uint32_t mipLevels{};
+	VkImageLayout layout{
+		VK_IMAGE_LAYOUT_UNDEFINED};
 
 	void createTexture(VkDevice device,
 					   VmaAllocator vma,
@@ -321,7 +323,6 @@ struct DepthTexture
 
 	inline void
 	transition(VkCommandBuffer cmd,
-			   VkImageLayout currentLayout,
 			   VkImageLayout newLayout)
 	{
 		VkImageMemoryBarrier2 imageBarrier{
@@ -342,7 +343,7 @@ struct DepthTexture
 			VK_ACCESS_2_TRANSFER_WRITE_BIT |
 			VK_ACCESS_2_TRANSFER_READ_BIT;
 
-		imageBarrier.oldLayout = currentLayout;
+		imageBarrier.oldLayout = layout;
 		imageBarrier.newLayout = newLayout;
 
 		VkImageAspectFlags aspectMask =
@@ -363,6 +364,7 @@ struct DepthTexture
 			&imageBarrier;
 
 		vkCmdPipelineBarrier2(cmd, &depInfo);
+		layout = newLayout;
 	}
 };
 
@@ -382,6 +384,9 @@ struct Texture2D
 						  VmaAllocator vma,
 						  VkExtent2D size,
 						  size_t mipLevels);
+
+	VkImageLayout layout{
+		VK_IMAGE_LAYOUT_UNDEFINED};
 
 	inline void
 	destroy(vk::DeletionQueue* deletionQueue)
@@ -415,12 +420,13 @@ struct Texture2D
 		{
 			regenerateMipmaps(
 				cmd, data.image, size, mipLevels);
+			layout =
+				VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 		}
 	}
 
 	inline void
 	transition(VkCommandBuffer cmd,
-			   VkImageLayout currentLayout,
 			   VkImageLayout newLayout)
 	{
 		VkImageMemoryBarrier2 imageBarrier{
@@ -441,7 +447,7 @@ struct Texture2D
 			VK_ACCESS_2_TRANSFER_WRITE_BIT |
 			VK_ACCESS_2_TRANSFER_READ_BIT;
 
-		imageBarrier.oldLayout = currentLayout;
+		imageBarrier.oldLayout = layout;
 		imageBarrier.newLayout = newLayout;
 
 		VkImageAspectFlags aspectMask =
@@ -465,6 +471,8 @@ struct Texture2D
 			&imageBarrier;
 
 		vkCmdPipelineBarrier2(cmd, &depInfo);
+
+		layout = newLayout;
 	}
 
 	inline void clear(VkCommandBuffer cmd,
@@ -505,6 +513,8 @@ struct Texture2DArray
 	uint32_t layers{};
 	VkSampler sampler{};
 	uint32_t mipLevels{};
+	VkImageLayout layout{
+		VK_IMAGE_LAYOUT_UNDEFINED};
 
 	void createTexture(VkDevice device,
 					   VmaAllocator vma,
@@ -550,12 +560,13 @@ struct Texture2DArray
 							  size,
 							  mipLevels,
 							  layers);
+			layout =
+				VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 		}
 	}
 
 	inline void
 	transition(VkCommandBuffer cmd,
-			   VkImageLayout currentLayout,
 			   VkImageLayout newLayout)
 	{
 		VkImageMemoryBarrier2 imageBarrier{
@@ -576,7 +587,7 @@ struct Texture2DArray
 			VK_ACCESS_2_TRANSFER_WRITE_BIT |
 			VK_ACCESS_2_TRANSFER_READ_BIT;
 
-		imageBarrier.oldLayout = currentLayout;
+		imageBarrier.oldLayout = layout;
 		imageBarrier.newLayout = newLayout;
 
 		VkImageAspectFlags aspectMask =
@@ -600,6 +611,8 @@ struct Texture2DArray
 			&imageBarrier;
 
 		vkCmdPipelineBarrier2(cmd, &depInfo);
+
+		layout = newLayout;
 	}
 };
 

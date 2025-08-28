@@ -595,15 +595,12 @@ void ChunkRenderer::render(VkCommandBuffer cmd)
 	auto render = Renderer::get();
 	render->textureAtlas.transition(
 		cmd,
-		VK_IMAGE_LAYOUT_UNDEFINED,
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	render->normalAtlas.transition(
 		cmd,
-		VK_IMAGE_LAYOUT_UNDEFINED,
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	render->metallicRoughnessAtlas.transition(
 		cmd,
-		VK_IMAGE_LAYOUT_UNDEFINED,
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	auto* backbuffer = render->getBackbuffer();
 	auto* deferredBuffers =

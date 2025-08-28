@@ -131,32 +131,25 @@ void Renderer::cleanup()
 void Renderer::renderLogic(CommandBuffer* cmd)
 {
 	backbuffer.transition(
-		cmd->getCmd(),
-		VK_IMAGE_LAYOUT_UNDEFINED,
-		VK_IMAGE_LAYOUT_GENERAL);
+		cmd->getCmd(), VK_IMAGE_LAYOUT_GENERAL);
 	backbuffer.clear(cmd->getCmd(), 0, 0, 0);
 	backbuffer.transition(
 		cmd->getCmd(),
-		VK_IMAGE_LAYOUT_GENERAL,
 		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
 	worldRenderer.render(cmd->getCmd());
 
 	deferredBuffers.albedo.transition(
 		cmd->getCmd(),
-		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	deferredBuffers.normal.transition(
 		cmd->getCmd(),
-		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	deferredBuffers.pos.transition(
 		cmd->getCmd(),
-		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	deferredBuffers.material.transition(
 		cmd->getCmd(),
-		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 	deferredRenderer.render(cmd->getCmd());
@@ -401,7 +394,6 @@ void Renderer::renderFrame(RenderState& state)
 
 	backbuffer.transition(
 		cmd->getCmd(),
-		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
 	cmd->transitionImage(

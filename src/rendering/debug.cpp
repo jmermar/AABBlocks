@@ -79,12 +79,10 @@ void DebugRenderer::render(VkCommandBuffer cmd)
 	{
 		render->backbuffer.transition(
 			cmd,
-			VK_IMAGE_LAYOUT_UNDEFINED,
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
 		deferredBuffers->pos.transition(
 			cmd,
-			VK_IMAGE_LAYOUT_UNDEFINED,
 			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 		vk::copyImageToImage(
 			cmd,
@@ -96,18 +94,15 @@ void DebugRenderer::render(VkCommandBuffer cmd)
 			0);
 		render->backbuffer.transition(
 			cmd,
-			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 	}
 	else if(renderBuffer == ALBEDO)
 	{
 		render->backbuffer.transition(
 			cmd,
-			VK_IMAGE_LAYOUT_UNDEFINED,
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 		deferredBuffers->albedo.transition(
 			cmd,
-			VK_IMAGE_LAYOUT_UNDEFINED,
 			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 		vk::copyImageToImage(
 			cmd,
@@ -119,19 +114,16 @@ void DebugRenderer::render(VkCommandBuffer cmd)
 			0);
 		render->backbuffer.transition(
 			cmd,
-			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 	}
 	else if(renderBuffer == NORMAL)
 	{
 		render->backbuffer.transition(
 			cmd,
-			VK_IMAGE_LAYOUT_UNDEFINED,
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
 		deferredBuffers->normal.transition(
 			cmd,
-			VK_IMAGE_LAYOUT_UNDEFINED,
 			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 		vk::copyImageToImage(
 			cmd,
@@ -143,19 +135,16 @@ void DebugRenderer::render(VkCommandBuffer cmd)
 			0);
 		render->backbuffer.transition(
 			cmd,
-			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 	}
 	else if(renderBuffer == MATERIAL)
 	{
 		render->backbuffer.transition(
 			cmd,
-			VK_IMAGE_LAYOUT_UNDEFINED,
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
 		deferredBuffers->material.transition(
 			cmd,
-			VK_IMAGE_LAYOUT_UNDEFINED,
 			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 		vk::copyImageToImage(
 			cmd,
@@ -167,7 +156,6 @@ void DebugRenderer::render(VkCommandBuffer cmd)
 			0);
 		render->backbuffer.transition(
 			cmd,
-			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 	}
 	else if(renderBuffer == DEPTH)
