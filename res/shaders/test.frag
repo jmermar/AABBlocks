@@ -11,11 +11,13 @@ layout (location = 2) out vec4 outMaterial;
 layout (location = 3) out vec4 outPos;
 
 layout (set = 1, binding = 0) uniform sampler2DArray atlas;
+layout (set = 1, binding = 3) uniform sampler2DArray normal;
+layout (set = 1, binding = 4) uniform sampler2DArray material;
 
 void main() 
 {
 	outAlbedo = texture(atlas, inUv);
 	outNormal = vec4(inNorm * 0.5 + vec3(0.5), 1);
-	outMaterial = vec4(1);
+	outMaterial = texture(material, inUv);
 	outPos = vec4(inPos, 0);
 }

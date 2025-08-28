@@ -3,6 +3,7 @@
 #include "types.hpp"
 #include <cstdint>
 #include <string>
+#include <unordered_map>
 #include <vector>
 namespace vblck
 {
@@ -14,19 +15,39 @@ struct ImageData
 
 struct ImageArrayData
 {
-	uint32_t w, h, layers;
-	std::vector<uint8_t> data;
+	uint32_t w{}, h{}, layers{};
+	std::vector<uint8_t> data{};
 };
 
-ImageData readImageFromFile(const std::string& path);
-ImageArrayData readImageArrayFromFile(const std::string& path, uint32_t ncols, uint32_t nrows);
+struct TextureAtlas
+{
+	ImageArrayData albedo{};
+	ImageArrayData normal{};
+	ImageArrayData metallicRoughness{};
+	std::unordered_map<std::string, uint32_t>
+		maps;
+};
+
+ImageData
+readImageFromFile(const std::string& path);
+ImageArrayData
+readImageArrayFromFile(const std::string& path,
+					   uint32_t ncols,
+					   uint32_t nrows);
 
 bool fileExists(const std::string& path);
-void createDirIfNotExists(const std::string& path);
-std::vector<std::string> listFilesInFolder(const std::string& path);
+void createDirIfNotExists(
+	const std::string& path);
+std::vector<std::string>
+listFilesInFolder(const std::string& path);
 
-std::vector<uint8_t> loadBinaryFile(const std::string& path);
+std::vector<uint8_t>
+loadBinaryFile(const std::string& path);
 std::string loadTextFile(const std::string& path);
 
-std::vector<BlockData> loadBlockData(const std::string& path);
+std::vector<BlockData>
+loadBlockData(const std::string& path,
+			  TextureAtlas& textureAtlas);
+TextureAtlas
+loadBlockTextures(const std::string& basePath);
 }; // namespace vblck

@@ -12,7 +12,16 @@ namespace world
 
 constexpr uint32_t SAND_LEVEL = 30;
 
-void World::setBlock(int32_t x, int32_t y, int32_t z, uint32_t id)
+void World::loadDatabase()
+{
+	blockDatabase.loadDatabase(
+		"res/BlockData.csv");
+}
+
+void World::setBlock(int32_t x,
+					 int32_t y,
+					 int32_t z,
+					 uint32_t id)
 {
 	auto cx = x / CHUNK_SIZE;
 	auto cy = y / CHUNK_SIZE;
@@ -91,11 +100,14 @@ void World::generateChunkMeshes()
 		cmd.data = c->generateChunkData();
 		if(c->meshData)
 		{
-			renderer->worldRenderer.chunkRenderer.deleteChunk(c->meshData);
+			renderer->worldRenderer.chunkRenderer
+				.deleteChunk(c->meshData);
 		}
 		if(cmd.data.size() > 0)
 		{
-			cmd.position = glm::vec3(c->cx, c->cy, c->cz) * (float)CHUNK_SIZE;
+			cmd.position =
+				glm::vec3(c->cx, c->cy, c->cz) *
+				(float)CHUNK_SIZE;
 			cmd.chunk = c;
 			chunkGenerateCommands.push_back(cmd);
 		}
@@ -104,26 +116,31 @@ void World::generateChunkMeshes()
 	for(auto& cmd : chunkGenerateCommands)
 	{
 		cmd.chunk->meshData =
-			renderer->worldRenderer.chunkRenderer.loadChunk(cmd.position, cmd.data);
+			renderer->worldRenderer.chunkRenderer
+				.loadChunk(cmd.position,
+						   cmd.data);
 	}
 	if(chunkGenerateCommands.size() > 0)
 	{
-		renderer->worldRenderer.chunkRenderer.regenerateChunks();
+		renderer->worldRenderer.chunkRenderer
+			.regenerateChunks();
 	}
 	chunkGenerateCommands.clear();
 }
 
-void World::create(uint32_t worldSize, uint32_t worldHeight)
+void World::create(uint32_t worldSize,
+				   uint32_t worldHeight)
 {
-	blockDatabase.loadDatabase("res/BlockData.csv");
 	this->worldHeight = worldHeight;
 	this->worldSize = worldSize;
-	chunks.resize(worldSize * worldSize * worldHeight);
+	chunks.resize(worldSize * worldSize *
+				  worldHeight);
 	for(uint32_t cx = 0; cx < worldSize; cx++)
 	{
 		for(uint32_t cz = 0; cz < worldSize; cz++)
 		{
-			for(uint32_t cy = 0; cy < worldHeight; cy++)
+			for(uint32_t cy = 0; cy < worldHeight;
+				cy++)
 			{
 				auto* chunk = chunkAt(cx, cy, cz);
 				chunk->cx = cx;
@@ -138,9 +155,12 @@ void World::update(float deltaTime)
 	generateChunkMeshes();
 }
 
-void BlockDatabase::loadDatabase(const std::string& file)
+void BlockDatabase::loadDatabase(
+	const std::string& file)
 {
-	blocks = loadBlockData(file);
+	textures =
+		loadBlockTextures("res/textures/blocks/");
+	blocks = loadBlockData(file, textures);
 	for(size_t i = 0; i < blocks.size(); i++)
 	{
 		maps[blocks[i].name] = i + 1;

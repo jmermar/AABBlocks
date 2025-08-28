@@ -113,7 +113,11 @@ void Renderer::destroySwapchain()
 void Renderer::cleanup()
 {
 	vkDeviceWaitIdle(device);
+
 	textureAtlas.destroy(&mainDeletionQueue);
+	normalAtlas.destroy(&mainDeletionQueue);
+	metallicRoughnessAtlas.destroy(
+		&mainDeletionQueue);
 	deferredRenderer.destroy();
 	worldRenderer.destroy();
 	renderData.destroy();
@@ -233,6 +237,25 @@ vk::Texture2DArray Renderer::loadTexture2DArray(
 					  vma,
 					  {image.w, image.h},
 					  image.layers,
+					  4);
+	bufferWritter.writeBufferToTexture2DArray(
+		buffer.data.buffer, tex);
+	buffer.destroy(&frameDeletionQueue);
+	return tex;
+}
+
+vk::Texture2DArray
+Renderer::loadTextureFromImageArray(
+	ImageArrayData& data)
+{
+	vk::StagingBuffer buffer{};
+	buffer.create(device, vma, data.data.size());
+	buffer.write((std::span<uint8_t>)data.data);
+	vk::Texture2DArray tex;
+	tex.createTexture(device,
+					  vma,
+					  {data.w, data.h},
+					  data.layers,
 					  4);
 	bufferWritter.writeBufferToTexture2DArray(
 		buffer.data.buffer, tex);
@@ -378,7 +401,7 @@ void Renderer::renderFrame(RenderState& state)
 
 	backbuffer.transition(
 		cmd->getCmd(),
-		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
 	cmd->transitionImage(

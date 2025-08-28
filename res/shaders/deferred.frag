@@ -54,9 +54,7 @@ void main() {
 	vec3 position = texture(gPosition, fragUV).rgb;
     vec3 normal = normalize(texture(gNormal, fragUV).xyz * 2 - 1);
     float metallic = texture(gMaterial, fragUV).r;
-    float roughness = texture(gMaterial, fragUV).g;
-    metallic = 0.3;
-    roughness = 0.4;
+    float roughness = 0.2;
 
     // Materials
     vec3 Fdielectric = vec3(0.04);
@@ -93,5 +91,5 @@ void main() {
 
     directLighting += (diffuseBRDF + specularBRDF) * Lradiance * cosLi;
 
-    outColor = vec4(directLighting, 0);
+    outColor = vec4(directLighting, 1);
 }

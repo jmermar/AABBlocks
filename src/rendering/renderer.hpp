@@ -6,6 +6,7 @@
 #include "glm/glm.hpp"
 #include "mapped_buffer.hpp"
 #include "types.hpp"
+#include "utils/files.hpp"
 #include "vk/deletion.hpp"
 #include "vk/descriptors.hpp"
 #include "vk/textures.hpp"
@@ -143,6 +144,8 @@ struct Renderer
 	vk::Texture2D backbuffer;
 	DeferredBuffers deferredBuffers;
 	vk::Texture2DArray textureAtlas{};
+	vk::Texture2DArray normalAtlas{};
+	vk::Texture2DArray metallicRoughnessAtlas{};
 
 	// Renderers
 	DeferredRenderer deferredRenderer;
@@ -190,7 +193,8 @@ struct Renderer
 			 VkQueue graphicsQueue,
 			 uint32_t graphicsQueueFamily,
 			 int w,
-			 int h)
+			 int h,
+			 TextureAtlas& textureAtlas)
 		: instance(instance)
 		, chosenGPU(chosenGPU)
 		, device(device)
@@ -203,8 +207,15 @@ struct Renderer
 		vkGetPhysicalDeviceProperties(chosenGPU,
 									  &props);
 		initVMA();
-		textureAtlas = loadTexture2DArray(
-			"res/textures/atlas.png", 16, 16);
+		this->textureAtlas =
+			loadTextureFromImageArray(
+				textureAtlas.albedo);
+		this->normalAtlas =
+			loadTextureFromImageArray(
+				textureAtlas.normal);
+		this->metallicRoughnessAtlas =
+			loadTextureFromImageArray(
+				textureAtlas.metallicRoughness);
 		recreateSwapchain(w, h);
 		initCommands();
 		initSyncStructures();
@@ -255,6 +266,8 @@ struct Renderer
 	vk::Texture2D loadTexture2D(const char* path);
 	vk::Texture2DArray loadTexture2DArray(
 		const char* path, int ncols, int nrows);
+	vk::Texture2DArray loadTextureFromImageArray(
+		ImageArrayData& data);
 
 	vk::Texture2D* getBackbuffer()
 	{

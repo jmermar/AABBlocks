@@ -22,10 +22,13 @@ struct ChunkGenerateCommand
 
 struct BlockDatabase
 {
-	std::unordered_map<std::string, uint32_t> maps;
+	std::unordered_map<std::string, uint32_t>
+		maps;
 	std::vector<BlockData> blocks;
+	TextureAtlas textures;
 
-	inline const BlockData* getBlockFromId(size_t id)
+	inline const BlockData*
+	getBlockFromId(size_t id)
 	{
 		assert(id <= blocks.size());
 		if(id == 0)
@@ -33,13 +36,15 @@ struct BlockDatabase
 		return &blocks[id - 1];
 	}
 
-	inline const BlockData* getBlockFromName(const std::string& name)
+	inline const BlockData*
+	getBlockFromName(const std::string& name)
 	{
 		assert(maps.contains(name));
 		return &blocks[maps[name]];
 	}
 
-	inline uint32_t getBlockId(const std::string& name)
+	inline uint32_t
+	getBlockId(const std::string& name)
 	{
 		assert(maps.contains(name));
 		return maps[name];
@@ -56,26 +61,38 @@ struct World
 		float maxFallSpeed = 16;
 	} physicsData;
 
+	void loadDatabase();
+
 	uint32_t worldSize{}, worldHeight{};
 	BlockDatabase blockDatabase;
 	std::vector<Chunk> chunks;
 
-	std::unordered_map<uint64_t, Chunk*> dirtyChunks;
-	std::vector<ChunkGenerateCommand> chunkGenerateCommands;
+	std::unordered_map<uint64_t, Chunk*>
+		dirtyChunks;
+	std::vector<ChunkGenerateCommand>
+		chunkGenerateCommands;
 
-	inline Chunk* chunkAt(int32_t cx, int32_t cy, int32_t cz)
+	inline Chunk*
+	chunkAt(int32_t cx, int32_t cy, int32_t cz)
 	{
 		if(cx < 0 || cy < 0 || cz < 0)
 			return 0;
-		if(cx >= (int32_t)(worldSize) || cz >= (int32_t)(worldSize) || cy >= (int32_t)(worldHeight))
+		if(cx >= (int32_t)(worldSize) ||
+		   cz >= (int32_t)(worldSize) ||
+		   cy >= (int32_t)(worldHeight))
 			return 0;
 
-		return &chunks[cz * worldSize * worldHeight + cy * worldSize + cx];
+		return &chunks[cz * worldSize *
+						   worldHeight +
+					   cy * worldSize + cx];
 	}
 
-	inline const BlockData* getBlock(int32_t x, int32_t y, int32_t z)
+	inline const BlockData*
+	getBlock(int32_t x, int32_t y, int32_t z)
 	{
-		auto* chunk = chunkAt(x / CHUNK_SIZE, y / CHUNK_SIZE, z / CHUNK_SIZE);
+		auto* chunk = chunkAt(x / CHUNK_SIZE,
+							  y / CHUNK_SIZE,
+							  z / CHUNK_SIZE);
 		if(!chunk)
 			return 0;
 
@@ -83,21 +100,27 @@ struct World
 		y %= CHUNK_SIZE;
 		z %= CHUNK_SIZE;
 
-		return blockDatabase.getBlockFromId(chunk->blocks[z][y][x]);
+		return blockDatabase.getBlockFromId(
+			chunk->blocks[z][y][x]);
 	}
 
-	void setBlock(int32_t x, int32_t y, int32_t z, uint32_t id);
+	void setBlock(int32_t x,
+				  int32_t y,
+				  int32_t z,
+				  uint32_t id);
 
 	void generateChunkMeshes();
 
-	void create(uint32_t worldSize, uint32_t worldHeight);
+	void create(uint32_t worldSize,
+				uint32_t worldHeight);
 	void destroy();
 
 	void update(float deltaTime);
 
 	static World* get()
 	{
-		static std::unique_ptr<World> world = std::make_unique<World>();
+		static std::unique_ptr<World> world =
+			std::make_unique<World>();
 		return world.get();
 	}
 

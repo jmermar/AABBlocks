@@ -301,6 +301,13 @@ void ChunkRenderer::createDescriptors()
 		1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 	layoutBuilder.addBinding(
 		2, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+	layoutBuilder.addBinding(
+		3,
+		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+	layoutBuilder.addBinding(
+		4,
+		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+
 	descriptorSetLayout = layoutBuilder.build(
 		Renderer::get()->device,
 		VK_SHADER_STAGE_ALL_GRAPHICS);
@@ -309,11 +316,19 @@ void ChunkRenderer::createDescriptors()
 		descriptorSetLayout);
 
 	vk::DescriptorWriter writer;
-	writer.startWrites(3);
+	writer.startWrites(5);
 	writer.writeImage(
 		0,
 		render->textureAtlas.imageView,
 		render->textureAtlas.sampler);
+	writer.writeImage(
+		3,
+		render->normalAtlas.imageView,
+		render->normalAtlas.sampler);
+	writer.writeImage(
+		4,
+		render->metallicRoughnessAtlas.imageView,
+		render->metallicRoughnessAtlas.sampler);
 	writer.writeBuffer(
 		1,
 		precomputedVertices.data.buffer,
@@ -579,6 +594,14 @@ void ChunkRenderer::render(VkCommandBuffer cmd)
 
 	auto render = Renderer::get();
 	render->textureAtlas.transition(
+		cmd,
+		VK_IMAGE_LAYOUT_UNDEFINED,
+		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	render->normalAtlas.transition(
+		cmd,
+		VK_IMAGE_LAYOUT_UNDEFINED,
+		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	render->metallicRoughnessAtlas.transition(
 		cmd,
 		VK_IMAGE_LAYOUT_UNDEFINED,
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);

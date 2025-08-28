@@ -1,7 +1,8 @@
 Name,Solid,Front,Back,Left,Right,Top,Bottom
-Grass,1,49,49,49,49,48,0
-Dirt,1,0,0,0,0,0,0
-Stone,1,1,1,1,1,1,1
-Brick,1,33,33,33,33,33,33
-Wood,1,35,35,35,35,35,35
-Sand,1,2,2,2,2,2,2
+Grass,1,grass_block_side,grass_block_side,grass_block_side,grass_block_side,grass_block_top,dirt
+Dirt,1,dirt,dirt,dirt,dirt,dirt,dirt
+Stone,1,stone,stone,stone,stone,stone,stone
+Brick,1,stone_bricks,stone_bricks,stone_bricks,stone_bricks,stone_bricks,stone_bricks
+Wood,1,stone_bricks,stone_bricks,stone_bricks,stone_bricks,stone_bricks,stone_bricks
+Sand,1,sand,sand,sand,sand,sand,sand
+Iron block,1,iron_block,iron_block,iron_block,iron_block,iron_block,iron_block

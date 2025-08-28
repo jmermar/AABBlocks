@@ -69,6 +69,8 @@ void fixedLoop()
 int main(int argc, char** argv)
 {
 	logger = spdlog::stdout_color_mt("VKP");
+	auto* world = world::World::get();
+	world->loadDatabase();
 
 	System system{};
 
@@ -89,7 +91,8 @@ int main(int argc, char** argv)
 		system.graphicsQueue,
 		system.graphicsQueueFamily,
 		gameData.screen.width,
-		gameData.screen.height);
+		gameData.screen.height,
+		world->blockDatabase.textures);
 
 	running = true;
 	auto ticks = SDL_GetTicks();
@@ -104,6 +107,10 @@ int main(int argc, char** argv)
 	renderState.camera.forward =
 		glm::vec3(0, 0, 1);
 	renderState.cullCamera = renderState.camera;
+	renderState.lightDirection =
+		glm::normalize(glm::vec3(0.5f, 1.f, 2.f));
+	renderState.lightIntensity = 0.5f;
+	renderState.ambient = 0.4f;
 	uint64_t frameDelta = 0;
 	float deltaTime = 0;
 

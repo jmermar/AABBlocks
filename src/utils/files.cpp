@@ -11,12 +11,17 @@
 #include <vector>
 namespace vblck
 {
-ImageData readImageFromFile(const std::string& path)
+ImageData
+readImageFromFile(const std::string& path)
 {
 
 	int width, height, channels;
 
-	unsigned char* data = stbi_load(path.c_str(), &width, &height, &channels, 4);
+	unsigned char* data = stbi_load(path.c_str(),
+									&width,
+									&height,
+									&channels,
+									4);
 
 	if(!data)
 	{
@@ -28,7 +33,9 @@ ImageData readImageFromFile(const std::string& path)
 	img.h = height;
 	img.data.resize(width * height * 4);
 
-	memcpy(img.data.data(), data, width * height * 4);
+	memcpy(img.data.data(),
+		   data,
+		   width * height * 4);
 	stbi_image_free(data);
 
 	return img;
@@ -40,7 +47,8 @@ bool fileExists(const std::string& path)
 		return false;
 	}
 
-	if(!std::filesystem::exists(path) || !std::filesystem::is_regular_file(path))
+	if(!std::filesystem::exists(path) ||
+	   !std::filesystem::is_regular_file(path))
 	{
 		return false;
 	}
@@ -54,10 +62,12 @@ void createDirIfNotExists(const std::string& path)
 		std::filesystem::create_directories(path);
 	}
 }
-std::vector<std::string> listFilesInFolder(const std::string& path)
+std::vector<std::string>
+listFilesInFolder(const std::string& path)
 {
 	std::vector<std::string> ret;
-	for(auto& entry : std::filesystem::directory_iterator(path))
+	for(auto& entry :
+		std::filesystem::directory_iterator(path))
 	{
 		ret.push_back(entry.path().filename());
 	}
@@ -78,7 +88,97 @@ std::string loadTextFile(const std::string& path)
 
 	return buffer.str();
 }
-std::vector<BlockData> loadBlockData(const std::string& path)
+TextureAtlas
+loadBlockTextures(const std::string& basePath)
+{
+
+	std::vector<std::string> files =
+		listFilesInFolder(basePath);
+	std::vector<std::string> filteredFiles;
+
+	for(const auto& file : files)
+	{
+		std::string filename = file;
+		// Solo archivos .png
+		if(filename.size() < 4 ||
+		   filename.substr(filename.size() - 4) !=
+			   ".png")
+			continue;
+
+		// Ignora los que terminan en _n.png o _s.png
+		if(filename.size() > 6)
+		{
+			std::string suffix = filename.substr(
+				filename.size() - 6, 2);
+			if(suffix == "_n" || suffix == "_s")
+				continue;
+		}
+
+		filteredFiles.push_back(filename);
+	}
+
+	uint32_t i = 0;
+	TextureAtlas texAtlas{};
+	for(const auto& file : filteredFiles)
+	{
+		auto albedo =
+			readImageFromFile(basePath + file);
+		auto normal = readImageFromFile(
+			basePath +
+			file.substr(0, file.size() - 4) +
+			"_n.png");
+		auto metallicRoughness =
+			readImageFromFile(
+				basePath +
+				file.substr(0, file.size() - 4) +
+				"_s.png");
+
+		if(texAtlas.albedo.layers == 0)
+		{
+			texAtlas.albedo.w = albedo.w;
+			texAtlas.albedo.h = albedo.h;
+		}
+		else
+		{
+			assert(albedo.w ==
+					   texAtlas.albedo.w &&
+				   albedo.h == texAtlas.albedo.h);
+		}
+
+		texAtlas.albedo.data.insert(
+			texAtlas.albedo.data.end(),
+			albedo.data.begin(),
+			albedo.data.end());
+		texAtlas.normal.data.insert(
+			texAtlas.normal.data.end(),
+			normal.data.begin(),
+			normal.data.end());
+		texAtlas.metallicRoughness.data.insert(
+			texAtlas.metallicRoughness.data.end(),
+			metallicRoughness.data.begin(),
+			metallicRoughness.data.end());
+		texAtlas.maps[file.substr(
+			0, file.size() - 4)] = i;
+		texAtlas.albedo.layers++;
+		i++;
+	}
+
+	texAtlas.normal.w = texAtlas.albedo.w;
+	texAtlas.normal.h = texAtlas.albedo.h;
+	texAtlas.normal.layers =
+		texAtlas.albedo.layers;
+	texAtlas.metallicRoughness.w =
+		texAtlas.albedo.w;
+	texAtlas.metallicRoughness.h =
+		texAtlas.albedo.h;
+	texAtlas.metallicRoughness.layers =
+		texAtlas.albedo.layers;
+
+	return texAtlas;
+}
+std::vector<BlockData>
+loadBlockData(const std::string& path,
+			  TextureAtlas& textureAtlas)
 {
 	std::ifstream file(path);
 	TRY(file.is_open());
@@ -104,24 +204,39 @@ std::vector<BlockData> loadBlockData(const std::string& path)
 		BlockData block;
 		block.name = columns[0];
 		block.solid = std::stoi(columns[1]);
-		block.faces[CHUNK_FACES_FRONT] = std::stoi(columns[2]);
-		block.faces[CHUNK_FACES_BACK] = std::stoi(columns[3]);
-		block.faces[CHUNK_FACES_LEFT] = std::stoi(columns[4]);
-		block.faces[CHUNK_FACES_RIGHT] = std::stoi(columns[5]);
-		block.faces[CHUNK_FACES_TOP] = std::stoi(columns[6]);
-		block.faces[CHUNK_FACES_BOTTOM] = std::stoi(columns[7]);
+		block.faces[CHUNK_FACES_FRONT] =
+			textureAtlas.maps[columns[2]];
+		block.faces[CHUNK_FACES_BACK] =
+			textureAtlas.maps[columns[3]];
+		block.faces[CHUNK_FACES_LEFT] =
+			textureAtlas.maps[columns[4]];
+		block.faces[CHUNK_FACES_RIGHT] =
+			textureAtlas.maps[columns[5]];
+		block.faces[CHUNK_FACES_TOP] =
+			textureAtlas.maps[columns[6]];
+		block.faces[CHUNK_FACES_BOTTOM] =
+			textureAtlas.maps[columns[7]];
 		data.push_back(block);
 	}
 	return data;
 }
-ImageArrayData readImageArrayFromFile(const std::string& path, uint32_t ncols, uint32_t nrows)
+ImageArrayData
+readImageArrayFromFile(const std::string& path,
+					   uint32_t ncols,
+					   uint32_t nrows)
 {
 	int width, height, channels;
 
-	unsigned char* data = stbi_load(path.c_str(), &width, &height, &channels, 4);
+	unsigned char* data = stbi_load(path.c_str(),
+									&width,
+									&height,
+									&channels,
+									4);
 
-	TRY(ncols <= (uint32_t)width && !(width % ncols));
-	TRY(nrows <= (uint32_t)height && !(height % nrows));
+	TRY(ncols <= (uint32_t)width &&
+		!(width % ncols));
+	TRY(nrows <= (uint32_t)height &&
+		!(height % nrows));
 
 	if(!data)
 	{
@@ -132,24 +247,37 @@ ImageArrayData readImageArrayFromFile(const std::string& path, uint32_t ncols, u
 	img.w = width / ncols;
 	img.h = height / nrows;
 	img.layers = ncols * nrows;
-	img.data.resize(ncols * nrows * img.w * img.h * 4);
+	img.data.resize(ncols * nrows * img.w *
+					img.h * 4);
 
 	for(uint32_t col = 0; col < ncols; col++)
 	{
 		for(uint32_t row = 0; row < nrows; row++)
 		{
-			auto layer = col * img.w * img.h * 4 + row * ncols * img.w * img.h * 4;
+			auto layer =
+				col * img.w * img.h * 4 +
+				row * ncols * img.w * img.h * 4;
 			for(uint32_t y = 0; y < img.h; y++)
 			{
-				for(uint32_t x = 0; x < img.w; x++)
+				for(uint32_t x = 0; x < img.w;
+					x++)
 				{
-					auto srcIdx = (row * img.h + y) * width * 4 + (col * img.w + x) * 4;
-					auto dstIdx = layer + img.w * y * 4 + x * 4;
+					auto srcIdx =
+						(row * img.h + y) *
+							width * 4 +
+						(col * img.w + x) * 4;
+					auto dstIdx = layer +
+								  img.w * y * 4 +
+								  x * 4;
 
-					img.data[dstIdx] = data[srcIdx];
-					img.data[dstIdx + 1] = data[srcIdx + 1];
-					img.data[dstIdx + 2] = data[srcIdx + 2];
-					img.data[dstIdx + 3] = data[srcIdx + 3];
+					img.data[dstIdx] =
+						data[srcIdx];
+					img.data[dstIdx + 1] =
+						data[srcIdx + 1];
+					img.data[dstIdx + 2] =
+						data[srcIdx + 2];
+					img.data[dstIdx + 3] =
+						data[srcIdx + 3];
 				}
 			}
 		}
@@ -159,7 +287,8 @@ ImageArrayData readImageArrayFromFile(const std::string& path, uint32_t ncols, u
 
 	return img;
 }
-std::vector<uint8_t> loadBinaryFile(const std::string& path)
+std::vector<uint8_t>
+loadBinaryFile(const std::string& path)
 {
 	std::ifstream file(path, std::ios::binary);
 
@@ -170,7 +299,9 @@ std::vector<uint8_t> loadBinaryFile(const std::string& path)
 	file.seekg(0, std::ios::beg);
 
 	std::vector<uint8_t> buffer(size);
-	TRY(file.read(reinterpret_cast<char*>(buffer.data()), size));
+	TRY(file.read(
+		reinterpret_cast<char*>(buffer.data()),
+		size));
 
 	return buffer;
 }
