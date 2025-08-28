@@ -54,7 +54,7 @@ void main() {
 	vec3 position = texture(gPosition, fragUV).rgb;
     vec3 normal = normalize(texture(gNormal, fragUV).xyz * 2 - 1);
     float metallic = texture(gMaterial, fragUV).r;
-    float roughness = 0.2;
+    float roughness = 0.1 + (1-metallic) * 0.9;
 
     // Materials
     vec3 Fdielectric = vec3(0.04);

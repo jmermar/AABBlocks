@@ -6,7 +6,7 @@ AABBlocks is a voxel game which is being developed in Vulkan and C++.
 
 The game focuses in minimal features regarding gameplay, but to implement some rendering techniques that are used in actual games.
 
-## [Video demonstration of an early version](https://www.youtube.com/watch?v=jWAyVscy1ZE)
+## [Video demonstration of an early version](https://www.youtube.com/watch?v=6l75Lxx1cUg)
 
 # Features
 
