@@ -67,7 +67,7 @@ System initSystemLinux(const char* win_name,
 	features13.dynamicRendering = true;
 	features13.synchronization2 = true;
 
-	VkPhysicalDeviceFeatures features;
+	VkPhysicalDeviceFeatures features{};
 	features.multiDrawIndirect = true;
 	features.shaderInt64 = true;
 

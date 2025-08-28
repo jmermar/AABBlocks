@@ -3,7 +3,8 @@ namespace vblck
 {
 namespace vk
 {
-void DeletionQueue::deleteQueue(VkDevice device, VmaAllocator vma)
+void DeletionQueue::deleteQueue(VkDevice device,
+								VmaAllocator vma)
 {
 	for(auto fence : fences)
 	{
@@ -13,19 +14,22 @@ void DeletionQueue::deleteQueue(VkDevice device, VmaAllocator vma)
 
 	for(auto semaphore : semaphores)
 	{
-		vkDestroySemaphore(device, semaphore, nullptr);
+		vkDestroySemaphore(
+			device, semaphore, nullptr);
 	}
 	semaphores.clear();
 
 	for(auto sampler : samplers)
 	{
-		vkDestroySampler(device, sampler, nullptr);
+		vkDestroySampler(
+			device, sampler, nullptr);
 	}
 	samplers.clear();
 
 	for(auto imageView : imageViews)
 	{
-		vkDestroyImageView(device, imageView, nullptr);
+		vkDestroyImageView(
+			device, imageView, nullptr);
 	}
 	imageViews.clear();
 
@@ -43,7 +47,8 @@ void DeletionQueue::deleteQueue(VkDevice device, VmaAllocator vma)
 
 	for(auto commandPool : commandPools)
 	{
-		vkDestroyCommandPool(device, commandPool, nullptr);
+		vkDestroyCommandPool(
+			device, commandPool, nullptr);
 	}
 	commandPools.clear();
 }
