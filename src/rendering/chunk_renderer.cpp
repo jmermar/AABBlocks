@@ -258,12 +258,12 @@ constexpr Face pushFace(glm::vec3 top,
 Face precomputedVerticesData[6] = {
 	//Front
 	pushFace({0, 1, 1},
-			 {0, 0, -1},
+			 {0, 0, 1},
 			 {1, 0, 0},
 			 {0, -1, 0}),
 	//Back
 	pushFace({1, 1, 0},
-			 {0, 0, 1},
+			 {0, 0, -1},
 			 {-1, 0, 0},
 			 {0, -1, 0}),
 	// Right
