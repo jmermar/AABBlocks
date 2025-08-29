@@ -18,6 +18,7 @@ layout(set = 0, binding = 0) readonly uniform CameraData {
     float ambientLight;
     vec3 lightDirection;
     float lightIntensity;
+    float exposure;
 } ubo;
 
 const float PI = 3.141592;
@@ -47,6 +48,17 @@ float gaSchlickGGX(float cosLi, float cosLo, float roughness)
 vec3 fresnelSchlick(vec3 F0, float cosTheta)
 {
 	return F0 + (vec3(1.0) - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+vec3 ACESFilmSimple(vec3 x)
+{
+	float a = 2.51f;
+	float b = 0.03f;
+	float c = 2.43f;
+	float d = 0.59f;
+	float e = 0.14f;
+	return clamp((x*(a*x+b))/(x*(c*x+d)+e), 0, 1);
+
 }
 
 void main() {
@@ -91,5 +103,5 @@ void main() {
 
     directLighting += (diffuseBRDF + specularBRDF) * Lradiance * cosLi;
 
-    outColor = vec4(directLighting, 1);
+    outColor = vec4(ACESFilmSimple(directLighting * ubo.exposure), 1);
 }

@@ -27,6 +27,7 @@ struct alignas(16) UniformGlobalData
 	float ambient;
 	glm::vec3 lightDir;
 	float lightIntensity;
+	float exposure;
 };
 
 void GlobalRenderData::create()
@@ -132,7 +133,8 @@ void Renderer::renderLogic(CommandBuffer* cmd)
 {
 	backbuffer.transition(
 		cmd->getCmd(), VK_IMAGE_LAYOUT_GENERAL);
-	backbuffer.clear(cmd->getCmd(), 0, 0, 0);
+	backbuffer.clearColor(
+		cmd->getCmd(), 0, 0, 0, 0);
 	backbuffer.transition(
 		cmd->getCmd(),
 		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
@@ -209,7 +211,7 @@ Renderer::loadTexture2D(const char* path)
 	buffer.create(device, vma, image.data.size());
 	buffer.write((std::span<uint8_t>)image.data);
 	vk::Texture2D tex;
-	tex.createTexture(
+	tex.createRGBATexture(
 		device, vma, {image.w, image.h}, 4);
 	bufferWritter.writeBufferToImage(
 		buffer.data.buffer, tex);
@@ -217,7 +219,7 @@ Renderer::loadTexture2D(const char* path)
 	return tex;
 }
 
-vk::Texture2DArray Renderer::loadTexture2DArray(
+vk::Texture2D Renderer::loadTexture2DArray(
 	const char* path, int ncols, int nrows)
 {
 	auto image = readImageArrayFromFile(
@@ -225,31 +227,30 @@ vk::Texture2DArray Renderer::loadTexture2DArray(
 	vk::StagingBuffer buffer{};
 	buffer.create(device, vma, image.data.size());
 	buffer.write((std::span<uint8_t>)image.data);
-	vk::Texture2DArray tex;
-	tex.createTexture(device,
-					  vma,
-					  {image.w, image.h},
-					  image.layers,
-					  4);
+	vk::Texture2D tex;
+	tex.createRGBATexture(device,
+						  vma,
+						  {image.w, image.h},
+						  image.layers,
+						  4);
 	bufferWritter.writeBufferToTexture2DArray(
 		buffer.data.buffer, tex);
 	buffer.destroy(&frameDeletionQueue);
 	return tex;
 }
 
-vk::Texture2DArray
-Renderer::loadTextureFromImageArray(
+vk::Texture2D Renderer::loadTextureFromImageArray(
 	ImageArrayData& data)
 {
 	vk::StagingBuffer buffer{};
 	buffer.create(device, vma, data.data.size());
 	buffer.write((std::span<uint8_t>)data.data);
-	vk::Texture2DArray tex;
-	tex.createTexture(device,
-					  vma,
-					  {data.w, data.h},
-					  data.layers,
-					  4);
+	vk::Texture2D tex;
+	tex.createRGBATexture(device,
+						  vma,
+						  {data.w, data.h},
+						  data.layers,
+						  4);
 	bufferWritter.writeBufferToTexture2DArray(
 		buffer.data.buffer, tex);
 	buffer.destroy(&frameDeletionQueue);
@@ -314,7 +315,7 @@ void Renderer::recreateSwapchain(int w, int h)
 			&renderSemaphores[i]));
 	}
 
-	backbuffer.createTexture(
+	backbuffer.createRGBATexture(
 		device, vma, screenExtent, 1);
 	deferredBuffers.create(
 		device, vma, screenExtent);
@@ -379,11 +380,14 @@ void Renderer::renderFrame(RenderState& state)
 		computedUtils.camFrustum;
 	uniformGlobalData->camPos =
 		glm::vec4(state.camera.position, 1.0f);
-	uniformGlobalData->ambient = state.ambient;
+	uniformGlobalData->ambient =
+		debugRenderer.ambient;
 	uniformGlobalData->lightDir =
-		state.lightDirection;
+		debugRenderer.lightDir;
 	uniformGlobalData->lightIntensity =
-		state.lightIntensity;
+		debugRenderer.lightIntensity;
+	uniformGlobalData->exposure =
+		debugRenderer.exposure;
 
 	cmd->begin();
 	renderData.writeDescriptors(cmd->getCmd());
@@ -566,12 +570,15 @@ void DeferredBuffers::create(VkDevice device,
 							 VmaAllocator vma,
 							 VkExtent2D size)
 {
-	depthBuffer.createTexture(
+	depthBuffer.createDepthTexture(
 		device, vma, size, 1);
-	albedo.createTexture(device, vma, size, 1);
-	normal.createTexture(device, vma, size, 1);
-	material.createTexture(device, vma, size, 1);
-	pos.createHdrTexture(device, vma, size, 1);
+	albedo.createRGBATexture(
+		device, vma, size, 1);
+	normal.createRGBATexture(
+		device, vma, size, 1);
+	material.createRGBATexture(
+		device, vma, size, 1);
+	pos.createRGBA16Texture(device, vma, size, 1);
 }
 
 void DeferredBuffers::destroy(

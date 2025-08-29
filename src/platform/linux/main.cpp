@@ -107,10 +107,6 @@ int main(int argc, char** argv)
 	renderState.camera.forward =
 		glm::vec3(0, 0, 1);
 	renderState.cullCamera = renderState.camera;
-	renderState.lightDirection =
-		glm::normalize(glm::vec3(0.5f, 1.f, 2.f));
-	renderState.lightIntensity = 0.5f;
-	renderState.ambient = 0.4f;
 	uint64_t frameDelta = 0;
 	float deltaTime = 0;
 
@@ -161,21 +157,6 @@ int main(int argc, char** argv)
 		ImGui::NewFrame();
 		ImGui::Text("FPS: %f",
 					1000.f / frameDelta);
-		ImGui::InputFloat("Ambient",
-						  &renderState.ambient,
-						  0.01f,
-						  0.1f,
-						  "%.3f");
-		ImGui::InputFloat3(
-			"Light Direction",
-			&renderState.lightDirection[0],
-			"%.3f");
-		ImGui::InputFloat(
-			"Light Intensity",
-			&renderState.lightIntensity,
-			0.01f,
-			0.1f,
-			"%.3f");
 
 		renderer->imGUIDefaultRender();
 

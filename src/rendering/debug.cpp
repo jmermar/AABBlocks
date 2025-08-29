@@ -67,6 +67,20 @@ void DebugRenderer::drawDebugUI()
 {
 	ImGui::Begin("Debug");
 	renderBuffer = selectRenderBuffer();
+	ImGui::InputFloat(
+		"Ambient", &ambient, 0.01f, 0.1f, "%.3f");
+	ImGui::InputFloat3(
+		"Light Direction", &lightDir[0], "%.3f");
+	ImGui::InputFloat("Light Intensity",
+					  &lightIntensity,
+					  0.01f,
+					  0.1f,
+					  "%.3f");
+	ImGui::InputFloat("Exposure",
+					  &exposure,
+					  0.01f,
+					  0.1f,
+					  "%.3f");
 	ImGui::End();
 }
 void DebugRenderer::render(VkCommandBuffer cmd)

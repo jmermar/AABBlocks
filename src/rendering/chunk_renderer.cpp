@@ -442,7 +442,7 @@ void ChunkRenderer::createPipeline()
 		VK_FORMAT_R8G8B8A8_UNORM,
 		VK_FORMAT_R8G8B8A8_UNORM,
 		VK_FORMAT_R8G8B8A8_UNORM,
-		VK_FORMAT_R32G32B32A32_SFLOAT};
+		VK_FORMAT_R16G16B16A16_SFLOAT};
 
 	//connect the image format we will draw into, from draw image
 	pipelineBuilder.set_color_attachment_format(

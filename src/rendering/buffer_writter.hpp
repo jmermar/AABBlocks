@@ -18,38 +18,49 @@ private:
 		VkBuffer buffer;
 		vk::Texture2D image;
 	};
-	std::vector<BufferToTexture2D> writesBufferToTexture2D;
+	std::vector<BufferToTexture2D>
+		writesBufferToTexture2D;
 	struct BufferToBuffer
 	{
 		VkBuffer src, dst;
 		uint32_t size;
 	};
-	std::vector<BufferToBuffer> writesBufferToBuffer;
+	std::vector<BufferToBuffer>
+		writesBufferToBuffer;
 	struct BufferToTexture2DArray
 	{
 		VkBuffer buffer;
-		vk::Texture2DArray image;
+		vk::Texture2D image;
 	};
-	std::vector<BufferToTexture2DArray> writesBufferToTexture2DArray;
+	std::vector<BufferToTexture2DArray>
+		writesBufferToTexture2DArray;
 
 public:
-	inline void writeBufferToImage(VkBuffer buffer, const vk::Texture2D& image)
+	inline void
+	writeBufferToImage(VkBuffer buffer,
+					   const vk::Texture2D& image)
 	{
 		BufferToTexture2D command;
 		command.buffer = buffer;
 		command.image = image;
-		writesBufferToTexture2D.push_back(command);
+		writesBufferToTexture2D.push_back(
+			command);
 	}
 
-	inline void writeBufferToTexture2DArray(VkBuffer buffer, const vk::Texture2DArray& texture)
+	inline void writeBufferToTexture2DArray(
+		VkBuffer buffer,
+		const vk::Texture2D& texture)
 	{
 		BufferToTexture2DArray command;
 		command.buffer = buffer;
 		command.image = texture;
-		writesBufferToTexture2DArray.push_back(command);
+		writesBufferToTexture2DArray.push_back(
+			command);
 	}
 
-	inline void writeToSSBO(VkBuffer src, vk::SSBO* dst, uint32_t size = 0)
+	inline void writeToSSBO(VkBuffer src,
+							vk::SSBO* dst,
+							uint32_t size = 0)
 	{
 		BufferToBuffer command;
 		command.src = src;

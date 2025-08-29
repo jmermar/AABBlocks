@@ -294,218 +294,7 @@ copyBufferToImage(VkCommandBuffer cmd,
 		&copyRegion);
 }
 
-struct DepthTexture
-{
-	vk::Image data{};
-	VkImageView imageView{};
-	VkExtent2D extent{};
-	uint32_t mipLevels{};
-	VkImageLayout layout{
-		VK_IMAGE_LAYOUT_UNDEFINED};
-
-	void createTexture(VkDevice device,
-					   VmaAllocator vma,
-					   VkExtent2D size,
-					   size_t mipLevels);
-	inline void
-	destroy(vk::DeletionQueue* deletionQueue)
-	{
-		assert(data.image && mipLevels > 0);
-		assert(deletionQueue);
-		deletionQueue->images.push_back(data);
-		deletionQueue->imageViews.push_back(
-			imageView);
-		data = Image();
-		imageView = 0;
-		extent = VkExtent2D();
-		mipLevels = 0;
-	}
-
-	inline void
-	transition(VkCommandBuffer cmd,
-			   VkImageLayout newLayout)
-	{
-		VkImageMemoryBarrier2 imageBarrier{
-			.sType =
-				VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2};
-		imageBarrier.pNext = nullptr;
-
-		imageBarrier.srcStageMask =
-			VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
-		imageBarrier.srcAccessMask =
-			VK_ACCESS_2_MEMORY_WRITE_BIT |
-			VK_ACCESS_2_TRANSFER_WRITE_BIT;
-		imageBarrier.dstStageMask =
-			VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
-		imageBarrier.dstAccessMask =
-			VK_ACCESS_2_MEMORY_WRITE_BIT |
-			VK_ACCESS_2_MEMORY_READ_BIT |
-			VK_ACCESS_2_TRANSFER_WRITE_BIT |
-			VK_ACCESS_2_TRANSFER_READ_BIT;
-
-		imageBarrier.oldLayout = layout;
-		imageBarrier.newLayout = newLayout;
-
-		VkImageAspectFlags aspectMask =
-			VK_IMAGE_ASPECT_DEPTH_BIT;
-
-		imageBarrier.subresourceRange =
-			vk::Init::imageSubresourceRange(
-				aspectMask);
-		imageBarrier.image = data.image;
-
-		VkDependencyInfo depInfo{};
-		depInfo.sType =
-			VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
-		depInfo.pNext = nullptr;
-
-		depInfo.imageMemoryBarrierCount = 1;
-		depInfo.pImageMemoryBarriers =
-			&imageBarrier;
-
-		vkCmdPipelineBarrier2(cmd, &depInfo);
-		layout = newLayout;
-	}
-};
-
 struct Texture2D
-{
-	vk::Image data{};
-	VkImageView imageView{};
-	VkExtent2D extent{};
-	VkSampler sampler{};
-	uint32_t mipLevels{};
-
-	void createTexture(VkDevice device,
-					   VmaAllocator vma,
-					   VkExtent2D size,
-					   size_t mipLevels);
-	void createHdrTexture(VkDevice device,
-						  VmaAllocator vma,
-						  VkExtent2D size,
-						  size_t mipLevels);
-
-	VkImageLayout layout{
-		VK_IMAGE_LAYOUT_UNDEFINED};
-
-	inline void
-	destroy(vk::DeletionQueue* deletionQueue)
-	{
-		assert(data.image && mipLevels > 0 &&
-			   sampler && imageView);
-		assert(deletionQueue);
-		deletionQueue->images.push_back(data);
-		deletionQueue->imageViews.push_back(
-			imageView);
-		deletionQueue->samplers.push_back(
-			sampler);
-		data = Image();
-		imageView = 0;
-		sampler = 0;
-		extent = VkExtent2D();
-		mipLevels = 0;
-	}
-
-	inline void
-	copyFromBuffer(VkCommandBuffer cmd,
-				   VkBuffer buffer)
-	{
-		assert(buffer && data.image &&
-			   mipLevels > 0);
-		VkExtent2D size = {extent.width,
-						   extent.height};
-		copyBufferToImage(
-			cmd, buffer, data.image, size, 0);
-		if(mipLevels > 0)
-		{
-			regenerateMipmaps(
-				cmd, data.image, size, mipLevels);
-			layout =
-				VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-		}
-	}
-
-	inline void
-	transition(VkCommandBuffer cmd,
-			   VkImageLayout newLayout)
-	{
-		VkImageMemoryBarrier2 imageBarrier{
-			.sType =
-				VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2};
-		imageBarrier.pNext = nullptr;
-
-		imageBarrier.srcStageMask =
-			VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
-		imageBarrier.srcAccessMask =
-			VK_ACCESS_2_MEMORY_WRITE_BIT |
-			VK_ACCESS_2_TRANSFER_WRITE_BIT;
-		imageBarrier.dstStageMask =
-			VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
-		imageBarrier.dstAccessMask =
-			VK_ACCESS_2_MEMORY_WRITE_BIT |
-			VK_ACCESS_2_MEMORY_READ_BIT |
-			VK_ACCESS_2_TRANSFER_WRITE_BIT |
-			VK_ACCESS_2_TRANSFER_READ_BIT;
-
-		imageBarrier.oldLayout = layout;
-		imageBarrier.newLayout = newLayout;
-
-		VkImageAspectFlags aspectMask =
-			(newLayout ==
-			 VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL)
-				? VK_IMAGE_ASPECT_DEPTH_BIT
-				: VK_IMAGE_ASPECT_COLOR_BIT;
-
-		imageBarrier.subresourceRange =
-			vk::Init::imageSubresourceRange(
-				aspectMask);
-		imageBarrier.image = data.image;
-
-		VkDependencyInfo depInfo{};
-		depInfo.sType =
-			VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
-		depInfo.pNext = nullptr;
-
-		depInfo.imageMemoryBarrierCount = 1;
-		depInfo.pImageMemoryBarriers =
-			&imageBarrier;
-
-		vkCmdPipelineBarrier2(cmd, &depInfo);
-
-		layout = newLayout;
-	}
-
-	inline void clear(VkCommandBuffer cmd,
-					  float r,
-					  float g,
-					  float b,
-					  float a = 1)
-	{
-		VkClearColorValue color;
-		color.float32[0] = r;
-		color.float32[1] = g;
-		color.float32[2] = b;
-		color.float32[3] = a;
-		VkImageSubresourceRange range{};
-		range.aspectMask =
-			VK_IMAGE_ASPECT_COLOR_BIT;
-		range.baseMipLevel = 0;
-		range.baseArrayLayer = 0;
-		range.layerCount =
-			VK_REMAINING_ARRAY_LAYERS;
-		range.levelCount =
-			VK_REMAINING_MIP_LEVELS;
-		vkCmdClearColorImage(
-			cmd,
-			data.image,
-			VK_IMAGE_LAYOUT_GENERAL,
-			&color,
-			1,
-			&range);
-	}
-};
-
-struct Texture2DArray
 {
 	vk::Image data{};
 	VkImageView imageView{};
@@ -515,12 +304,85 @@ struct Texture2DArray
 	uint32_t mipLevels{};
 	VkImageLayout layout{
 		VK_IMAGE_LAYOUT_UNDEFINED};
+	VkFormat format{};
+	VkImageUsageFlags usage{};
+	VkImageAspectFlags aspect{};
+	VkImageType imageType{VK_IMAGE_TYPE_2D};
+	VkImageViewType viewType{
+		VK_IMAGE_VIEW_TYPE_2D};
 
-	void createTexture(VkDevice device,
+	void createRGBATexture(VkDevice device,
+						   VmaAllocator vma,
+						   VkExtent2D size,
+						   uint32_t layers = 1,
+						   uint32_t mipLevels = 1)
+	{
+		this->extent = size;
+		this->layers = layers;
+		this->mipLevels = mipLevels;
+		this->format = VK_FORMAT_R8G8B8A8_UNORM;
+		this->usage =
+			VK_IMAGE_USAGE_SAMPLED_BIT |
+			VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+			VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+		this->aspect = VK_IMAGE_ASPECT_COLOR_BIT;
+		this->imageType = VK_IMAGE_TYPE_2D;
+		this->viewType =
+			(layers > 1)
+				? VK_IMAGE_VIEW_TYPE_2D_ARRAY
+				: VK_IMAGE_VIEW_TYPE_2D;
+		__create(device, vma);
+	}
+	void
+	createRGBA16Texture(VkDevice device,
+						VmaAllocator vma,
+						VkExtent2D size,
+						uint32_t layers = 1,
+						uint32_t mipLevels = 1)
+	{
+		this->extent = size;
+		this->layers = layers;
+		this->mipLevels = mipLevels;
+		this->format =
+			VK_FORMAT_R16G16B16A16_SFLOAT;
+		this->usage =
+			VK_IMAGE_USAGE_SAMPLED_BIT |
+			VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+			VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+		this->aspect = VK_IMAGE_ASPECT_COLOR_BIT;
+		this->imageType = VK_IMAGE_TYPE_2D;
+		this->viewType =
+			(layers > 1)
+				? VK_IMAGE_VIEW_TYPE_2D_ARRAY
+				: VK_IMAGE_VIEW_TYPE_2D;
+		__create(device, vma);
+	}
+	void
+	createDepthTexture(VkDevice device,
 					   VmaAllocator vma,
 					   VkExtent2D size,
-					   uint32_t layers,
-					   size_t mipLevels);
+					   uint32_t layers = 1,
+					   uint32_t mipLevels = 1)
+	{
+		this->extent = size;
+		this->layers = layers;
+		this->mipLevels = mipLevels;
+		this->format = VK_FORMAT_D32_SFLOAT;
+		this->usage =
+			VK_IMAGE_USAGE_SAMPLED_BIT |
+			VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+			VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+		this->aspect = VK_IMAGE_ASPECT_DEPTH_BIT;
+		this->imageType = VK_IMAGE_TYPE_2D;
+		this->viewType =
+			(layers > 1)
+				? VK_IMAGE_VIEW_TYPE_2D_ARRAY
+				: VK_IMAGE_VIEW_TYPE_2D;
+		__create(device, vma);
+	}
 	inline void
 	destroy(vk::DeletionQueue* deletionQueue)
 	{
@@ -532,11 +394,6 @@ struct Texture2DArray
 			imageView);
 		deletionQueue->samplers.push_back(
 			sampler);
-		data = Image();
-		imageView = 0;
-		sampler = 0;
-		extent = VkExtent2D();
-		mipLevels = 0;
 	}
 
 	inline void
@@ -614,6 +471,15 @@ struct Texture2DArray
 
 		layout = newLayout;
 	}
+
+	void clearColor(VkCommandBuffer cmd,
+					float r,
+					float g,
+					float b,
+					float a);
+
+	void __create(VkDevice device,
+				  VmaAllocator vma);
 };
 
 } // namespace vk

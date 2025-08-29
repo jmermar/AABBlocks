@@ -56,7 +56,7 @@ void main()
 	Vertex vertex = vertices[faceId * 6 + fineIdx];
 
 	gl_Position = ubo.projView * vec4((chunk.position.xyz + vec3(x, y, z) + vertex.pos), 1);
-	outUv = vec3(vertex.uv, face.textureId);
+	outUv = vec3(vertex.uv, 4);
 	outNorm = vertex.norm;
 	outPos = chunk.position.xyz + vec3(x, y, z) + vertex.pos;
 }

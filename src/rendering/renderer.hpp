@@ -55,16 +55,13 @@ struct RenderState
 {
 	Camera camera{};
 	Camera cullCamera{};
-	float lightIntensity{1.f};
-	glm::vec3 lightDirection{0.5f, -1.f, 0.5f};
-	float ambient{0.1f};
 
 	bool drawDebug{};
 };
 
 struct DeferredBuffers
 {
-	vk::DepthTexture depthBuffer;
+	vk::Texture2D depthBuffer;
 	vk::Texture2D albedo;
 	vk::Texture2D normal;
 	vk::Texture2D material;
@@ -143,9 +140,9 @@ struct Renderer
 	// Buffers and textures
 	vk::Texture2D backbuffer;
 	DeferredBuffers deferredBuffers;
-	vk::Texture2DArray textureAtlas{};
-	vk::Texture2DArray normalAtlas{};
-	vk::Texture2DArray metallicRoughnessAtlas{};
+	vk::Texture2D textureAtlas{};
+	vk::Texture2D normalAtlas{};
+	vk::Texture2D metallicRoughnessAtlas{};
 
 	// Renderers
 	DeferredRenderer deferredRenderer;
@@ -264,9 +261,9 @@ struct Renderer
 	};
 
 	vk::Texture2D loadTexture2D(const char* path);
-	vk::Texture2DArray loadTexture2DArray(
+	vk::Texture2D loadTexture2DArray(
 		const char* path, int ncols, int nrows);
-	vk::Texture2DArray loadTextureFromImageArray(
+	vk::Texture2D loadTextureFromImageArray(
 		ImageArrayData& data);
 
 	vk::Texture2D* getBackbuffer()
