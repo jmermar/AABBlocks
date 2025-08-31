@@ -52,6 +52,12 @@ void Texture2D::__create(VkDevice device,
 	imageInfo.sharingMode =
 		VK_SHARING_MODE_EXCLUSIVE;
 	imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+	imageInfo.flags = 0;
+	if(viewType == VK_IMAGE_VIEW_TYPE_CUBE)
+	{
+		imageInfo.flags |=
+			VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+	}
 
 	VmaAllocationCreateInfo allocInfo = {};
 	allocInfo.usage = VMA_MEMORY_USAGE_AUTO;

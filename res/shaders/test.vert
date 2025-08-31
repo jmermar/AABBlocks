@@ -30,6 +30,9 @@ layout(set = 0, binding = 0) readonly uniform CameraData {
     mat4 proj;
     mat4 view;
     mat4 projView;
+	mat4 iProjViewMatrix;
+	mat4 iViewMatrix;
+	mat4 iProjMatrix;
 	vec4 planes[6];
 } ubo;
 
@@ -56,7 +59,7 @@ void main()
 	Vertex vertex = vertices[faceId * 6 + fineIdx];
 
 	gl_Position = ubo.projView * vec4((chunk.position.xyz + vec3(x, y, z) + vertex.pos), 1);
-	outUv = vec3(vertex.uv, 4);
+	outUv = vec3(vertex.uv, face.textureId);
 	outNorm = vertex.norm;
 	outPos = chunk.position.xyz + vec3(x, y, z) + vertex.pos;
 }

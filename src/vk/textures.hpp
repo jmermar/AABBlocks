@@ -383,6 +383,25 @@ struct Texture2D
 				: VK_IMAGE_VIEW_TYPE_2D;
 		__create(device, vma);
 	}
+	void createCubeMap(VkDevice device,
+					   VmaAllocator vma,
+					   VkExtent2D size,
+					   uint32_t mipLevels = 1)
+	{
+		this->extent = size;
+		this->layers = 6;
+		this->mipLevels = mipLevels;
+		this->format = VK_FORMAT_R8G8B8A8_UNORM;
+		this->usage =
+			VK_IMAGE_USAGE_SAMPLED_BIT |
+			VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+			VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+		this->aspect = VK_IMAGE_ASPECT_COLOR_BIT;
+		this->imageType = VK_IMAGE_TYPE_2D;
+		this->viewType = VK_IMAGE_VIEW_TYPE_CUBE;
+		__create(device, vma);
+	}
 	inline void
 	destroy(vk::DeletionQueue* deletionQueue)
 	{
@@ -448,8 +467,8 @@ struct Texture2D
 		imageBarrier.newLayout = newLayout;
 
 		VkImageAspectFlags aspectMask =
-			(newLayout ==
-			 VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL)
+			(usage &
+			 VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
 				? VK_IMAGE_ASPECT_DEPTH_BIT
 				: VK_IMAGE_ASPECT_COLOR_BIT;
 

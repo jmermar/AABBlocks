@@ -22,6 +22,9 @@ struct alignas(16) UniformGlobalData
 	glm::mat4 projMatrix;
 	glm::mat4 viewMatrix;
 	glm::mat4 projViewMatrix;
+	glm::mat4 iProjViewMatrix;
+	glm::mat4 iViewMatrix;
+	glm::mat4 iProjMatrix;
 	Frustum camFrustum;
 	glm::vec3 camPos;
 	float ambient;
@@ -114,7 +117,7 @@ void Renderer::destroySwapchain()
 void Renderer::cleanup()
 {
 	vkDeviceWaitIdle(device);
-
+	skybox.destroy(&mainDeletionQueue);
 	textureAtlas.destroy(&mainDeletionQueue);
 	normalAtlas.destroy(&mainDeletionQueue);
 	metallicRoughnessAtlas.destroy(
@@ -151,6 +154,12 @@ void Renderer::renderLogic(CommandBuffer* cmd)
 		cmd->getCmd(),
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	deferredBuffers.material.transition(
+		cmd->getCmd(),
+		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	deferredBuffers.depthBuffer.transition(
+		cmd->getCmd(),
+		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	skybox.transition(
 		cmd->getCmd(),
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
@@ -252,6 +261,22 @@ vk::Texture2D Renderer::loadTextureFromImageArray(
 						  data.layers,
 						  4);
 	bufferWritter.writeBufferToTexture2DArray(
+		buffer.data.buffer, tex);
+	buffer.destroy(&frameDeletionQueue);
+	return tex;
+}
+
+vk::Texture2D
+Renderer::loadCubeMap(const char* path)
+{
+	auto image = readCubeMapFromFile(path);
+	vk::StagingBuffer buffer{};
+	buffer.create(device, vma, image.data.size());
+	buffer.write((std::span<uint8_t>)image.data);
+	vk::Texture2D tex;
+	tex.createCubeMap(
+		device, vma, {image.w, image.h}, 1);
+	bufferWritter.writeBufferToImage(
 		buffer.data.buffer, tex);
 	buffer.destroy(&frameDeletionQueue);
 	return tex;
@@ -388,6 +413,13 @@ void Renderer::renderFrame(RenderState& state)
 		debugRenderer.lightIntensity;
 	uniformGlobalData->exposure =
 		debugRenderer.exposure;
+	uniformGlobalData->iProjViewMatrix =
+		glm::inverse(
+			uniformGlobalData->projViewMatrix);
+	uniformGlobalData->iViewMatrix = glm::inverse(
+		uniformGlobalData->viewMatrix);
+	uniformGlobalData->iProjMatrix = glm::inverse(
+		uniformGlobalData->projMatrix);
 
 	cmd->begin();
 	renderData.writeDescriptors(cmd->getCmd());

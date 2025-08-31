@@ -26,7 +26,7 @@ readImageFromFile(const std::string& path)
 	if(!data)
 	{
 		LOG_ERR("CANNOT LOAD IMAGE");
-		exit(-1);
+		std::exit(-1);
 	}
 	ImageData img;
 	img.w = width;
@@ -37,6 +37,53 @@ readImageFromFile(const std::string& path)
 		   data,
 		   width * height * 4);
 	stbi_image_free(data);
+
+	return img;
+}
+ImageArrayData
+readCubeMapFromFile(const std::string& path)
+{
+	ImageData front =
+		readImageFromFile(path + "/front.bmp");
+	ImageData back =
+		readImageFromFile(path + "/back.bmp");
+	ImageData up =
+		readImageFromFile(path + "/up.bmp");
+	ImageData down =
+		readImageFromFile(path + "/down.bmp");
+	ImageData right =
+		readImageFromFile(path + "/right.bmp");
+	ImageData left =
+		readImageFromFile(path + "/left.bmp");
+
+	ImageArrayData img;
+	img.layers = 6;
+	img.w = front.w;
+	img.h = front.h;
+	img.data.resize(img.layers * img.w * img.h *
+					4);
+	memcpy(img.data.data(),
+		   right.data.data(),
+		   img.w * img.h * 4);
+	memcpy(img.data.data() + img.w * img.h * 4,
+		   left.data.data(),
+		   img.w * img.h * 4);
+	memcpy(img.data.data() +
+			   img.w * img.h * 4 * 2,
+		   up.data.data(),
+		   img.w * img.h * 4);
+	memcpy(img.data.data() +
+			   img.w * img.h * 4 * 3,
+		   down.data.data(),
+		   img.w * img.h * 4);
+	memcpy(img.data.data() +
+			   img.w * img.h * 4 * 4,
+		   front.data.data(),
+		   img.w * img.h * 4);
+	memcpy(img.data.data() +
+			   img.w * img.h * 4 * 5,
+		   back.data.data(),
+		   img.w * img.h * 4);
 
 	return img;
 }

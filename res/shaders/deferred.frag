@@ -1,11 +1,14 @@
 #version 450
 
-layout(location = 0) in vec2 fragUV;
+layout (location = 0) in vec2 fragUV;
+layout (location=1) in vec3 iRay;
 
 layout(set = 1, binding = 0) uniform sampler2D gAlbedo;
 layout(set = 1, binding = 1) uniform sampler2D gNormal;
 layout(set = 1, binding = 2) uniform sampler2D gPosition;
 layout(set = 1, binding = 3) uniform sampler2D gMaterial;
+layout(set = 1, binding = 5) uniform sampler2D gDepth;
+layout(set = 1, binding = 6) uniform samplerCube skybox;
 
 layout (location = 0) out vec4 outColor;
 
@@ -13,6 +16,9 @@ layout(set = 0, binding = 0) readonly uniform CameraData {
     mat4 proj;
     mat4 view;
     mat4 projView;
+    mat4 iProjViewMatrix;
+	mat4 iViewMatrix;
+	mat4 iProjMatrix;
 	vec4 planes[6];
 	vec3 cameraPosition;
     float ambientLight;
@@ -62,11 +68,20 @@ vec3 ACESFilmSimple(vec3 x)
 }
 
 void main() {
+
+    
     vec3 albedo = texture(gAlbedo, fragUV).rgb;
 	vec3 position = texture(gPosition, fragUV).rgb;
     vec3 normal = normalize(texture(gNormal, fragUV).xyz * 2 - 1);
     float metallic = texture(gMaterial, fragUV).r;
     float roughness = 0.1 + (1-metallic) * 0.9;
+    float depth = texture(gDepth, fragUV).r;
+
+    if (depth == 1.0)
+    {
+        outColor = texture(skybox, iRay);
+        return;
+    }
 
     // Materials
     vec3 Fdielectric = vec3(0.04);

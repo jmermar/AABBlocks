@@ -52,6 +52,13 @@ void DeferredRenderer::_createDescriptors()
 		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 	layoutBuilder.addBinding(
 		4, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+	layoutBuilder.addBinding(
+		5,
+		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+	layoutBuilder.addBinding(
+		6,
+		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+
 	descriptorSetLayout = layoutBuilder.build(
 		Renderer::get()->device,
 		VK_SHADER_STAGE_ALL_GRAPHICS);
@@ -150,7 +157,7 @@ void DeferredRenderer::writeDescriptorSets()
 	auto* deferredBuffers =
 		&render->deferredBuffers;
 	vk::DescriptorWriter writer;
-	writer.startWrites(5);
+	writer.startWrites(7);
 	writer.writeImage(
 		0,
 		deferredBuffers->albedo.imageView,
@@ -167,6 +174,13 @@ void DeferredRenderer::writeDescriptorSets()
 		3,
 		deferredBuffers->material.imageView,
 		deferredBuffers->material.sampler);
+	writer.writeImage(
+		5,
+		deferredBuffers->depthBuffer.imageView,
+		deferredBuffers->depthBuffer.sampler);
+	writer.writeImage(6,
+					  render->skybox.imageView,
+					  render->skybox.sampler);
 	writer.writeBuffer(4,
 					   vertices.data.buffer,
 					   vertices.size,

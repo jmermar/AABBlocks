@@ -143,6 +143,7 @@ struct Renderer
 	vk::Texture2D textureAtlas{};
 	vk::Texture2D normalAtlas{};
 	vk::Texture2D metallicRoughnessAtlas{};
+	vk::Texture2D skybox{};
 
 	// Renderers
 	DeferredRenderer deferredRenderer;
@@ -213,6 +214,8 @@ struct Renderer
 		this->metallicRoughnessAtlas =
 			loadTextureFromImageArray(
 				textureAtlas.metallicRoughness);
+		skybox =
+			loadCubeMap("res/textures/skybox");
 		recreateSwapchain(w, h);
 		initCommands();
 		initSyncStructures();
@@ -265,7 +268,7 @@ struct Renderer
 		const char* path, int ncols, int nrows);
 	vk::Texture2D loadTextureFromImageArray(
 		ImageArrayData& data);
-
+	vk::Texture2D loadCubeMap(const char* path);
 	vk::Texture2D* getBackbuffer()
 	{
 		return &backbuffer;

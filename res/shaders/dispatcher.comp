@@ -31,6 +31,9 @@ layout(set = 0, binding = 0, std140) readonly uniform CameraData {
     mat4 proj;
     mat4 view;
     mat4 projView;
+    mat4 iProjViewMatrix;
+	mat4 iViewMatrix;
+	mat4 iProjMatrix;
     vec4 planes[6];
 } ubo;
 

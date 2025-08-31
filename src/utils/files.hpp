@@ -34,6 +34,8 @@ ImageArrayData
 readImageArrayFromFile(const std::string& path,
 					   uint32_t ncols,
 					   uint32_t nrows);
+ImageArrayData
+readCubeMapFromFile(const std::string& path);
 
 bool fileExists(const std::string& path);
 void createDirIfNotExists(
