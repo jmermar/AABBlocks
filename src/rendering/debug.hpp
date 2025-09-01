@@ -25,7 +25,7 @@ struct DebugRenderer
 
 	float ambient = 0.5f;
 	glm::vec3 lightDir = {1.f, 1.f, 3.f};
-	float lightIntensity = 0.8f;
+	float lightIntensity = 2.f;
 
 	float exposure = 0.6f;
 

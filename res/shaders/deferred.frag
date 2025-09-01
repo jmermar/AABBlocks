@@ -42,7 +42,7 @@ void main()
 	vec3 normal = normalize(
 		texture(gNormal, fragUV).xyz * 2 - 1);
 	float metallic = texture(gMaterial, fragUV).r;
-	float roughness = 0.1 + (1 - metallic) * 0.9;
+	float roughness = 0.3 + (1 - metallic) * 0.7;
 	vec3 camDir = normalize(
 		ubo.cameraPosition.xyz - position);
 	float depth = texture(gDepth, fragUV).r;
@@ -82,18 +82,16 @@ void main()
 		vec3 N = normal;
 		vec3 V = normalize(
 			ubo.cameraPosition.xyz - position);
-		vec3 kS = fresnelSchlick(
-			max(dot(N, V), 0.0), F0);
-		vec3 kD = 1.0 - kS;
-		kD *= 1.0 - metallic;
 		vec3 irradiance =
 			texture(skybox, refVec).rgb;
-		vec3 diffuse = irradiance * albedo;
+		vec3 diffuse = albedo;
 		vec3 F = fresnelSchlickRoughness(
 			max(dot(N, V), 0.0), F0, roughness);
 		vec3 specular = irradiance * F;
-		vec3 ambient = (kD * diffuse + specular) *
-					   ubo.ambientLight;
+		vec3 ambient =
+			((diffuse * (1.0 - metallic)) +
+			 specular) *
+			ubo.ambientLight;
 
 		color += ambient;
 	}

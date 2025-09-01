@@ -5,7 +5,7 @@
 AABBlocks is a voxel game currently being developed in Vulkan and C++.  
 The project focuses on minimal gameplay features, but aims to implement modern rendering techniques found in contemporary games.
 
-## [Video demonstration of an early version](https://www.youtube.com/watch?v=6l75Lxx1cUg)
+## [Video demonstration of an early version](https://www.youtube.com/watch?v=LADutXLPXs4)
 
 # Features
 
@@ -24,6 +24,11 @@ Support for PBR materials is currently in development. The deferred shader imple
 Supporting PBR textures is challenging due to the lack of a standard "PBR" texture format, so textures need to be adapted for uniform handling.
 
 Currently, only a single directional light is supported. Point lights and shadow casting are planned for future updates.
+
+## [WIP] Reflections
+![Reflections](screenshots/normals.png)
+
+Currently, an skybox is being used for calculating reflections, integrated in the pbr shader.
 
 ## World Persistence
 
