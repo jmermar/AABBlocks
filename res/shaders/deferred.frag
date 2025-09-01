@@ -1,60 +1,24 @@
 #version 450
+#include "includes/globalData.h"
+#include "includes/pbr.h"
 
-layout (location = 0) in vec2 fragUV;
-layout (location=1) in vec3 iRay;
+layout(location = 0) in vec2 fragUV;
+layout(location = 1) in vec3 iRay;
 
-layout(set = 1, binding = 0) uniform sampler2D gAlbedo;
-layout(set = 1, binding = 1) uniform sampler2D gNormal;
-layout(set = 1, binding = 2) uniform sampler2D gPosition;
-layout(set = 1, binding = 3) uniform sampler2D gMaterial;
-layout(set = 1, binding = 5) uniform sampler2D gDepth;
-layout(set = 1, binding = 6) uniform samplerCube skybox;
+layout(set = 1,
+	   binding = 0) uniform sampler2D gAlbedo;
+layout(set = 1,
+	   binding = 1) uniform sampler2D gNormal;
+layout(set = 1,
+	   binding = 2) uniform sampler2D gPosition;
+layout(set = 1,
+	   binding = 3) uniform sampler2D gMaterial;
+layout(set = 1,
+	   binding = 5) uniform sampler2D gDepth;
+layout(set = 1,
+	   binding = 6) uniform samplerCube skybox;
 
-layout (location = 0) out vec4 outColor;
-
-layout(set = 0, binding = 0) readonly uniform CameraData {
-    mat4 proj;
-    mat4 view;
-    mat4 projView;
-    mat4 iProjViewMatrix;
-	mat4 iViewMatrix;
-	mat4 iProjMatrix;
-	vec4 planes[6];
-	vec3 cameraPosition;
-    float ambientLight;
-    vec3 lightDirection;
-    float lightIntensity;
-    float exposure;
-} ubo;
-
-const float PI = 3.141592;
-const float Epsilon = 0.00001;
-
-float ndfGGX(float cosLh, float roughness)
-{
-	float alpha   = roughness * roughness;
-	float alphaSq = alpha * alpha;
-
-	float denom = (cosLh * cosLh) * (alphaSq - 1.0) + 1.0;
-	return alphaSq / (PI * denom * denom);
-}
-
-float gaSchlickG1(float cosTheta, float k)
-{
-	return cosTheta / (cosTheta * (1.0 - k) + k);
-}
-
-float gaSchlickGGX(float cosLi, float cosLo, float roughness)
-{
-	float r = roughness + 1.0;
-	float k = (r * r) / 8.0;
-	return gaSchlickG1(cosLi, k) * gaSchlickG1(cosLo, k);
-}
-
-vec3 fresnelSchlick(vec3 F0, float cosTheta)
-{
-	return F0 + (vec3(1.0) - F0) * pow(1.0 - cosTheta, 5.0);
-}
+layout(location = 0) out vec4 outColor;
 
 vec3 ACESFilmSimple(vec3 x)
 {
@@ -63,60 +27,76 @@ vec3 ACESFilmSimple(vec3 x)
 	float c = 2.43f;
 	float d = 0.59f;
 	float e = 0.14f;
-	return clamp((x*(a*x+b))/(x*(c*x+d)+e), 0, 1);
-
+	return clamp((x * (a * x + b)) /
+					 (x * (c * x + d) + e),
+				 0,
+				 1);
 }
 
-void main() {
+void main()
+{
 
-    
-    vec3 albedo = texture(gAlbedo, fragUV).rgb;
-	vec3 position = texture(gPosition, fragUV).rgb;
-    vec3 normal = normalize(texture(gNormal, fragUV).xyz * 2 - 1);
-    float metallic = texture(gMaterial, fragUV).r;
-    float roughness = 0.1 + (1-metallic) * 0.9;
-    float depth = texture(gDepth, fragUV).r;
+	vec3 albedo = texture(gAlbedo, fragUV).rgb;
+	vec3 position =
+		texture(gPosition, fragUV).rgb;
+	vec3 normal = normalize(
+		texture(gNormal, fragUV).xyz * 2 - 1);
+	float metallic = texture(gMaterial, fragUV).r;
+	float roughness = 0.1 + (1 - metallic) * 0.9;
+	vec3 camDir = normalize(
+		ubo.cameraPosition.xyz - position);
+	float depth = texture(gDepth, fragUV).r;
+	vec3 color;
+	vec3 skyColor = texture(skybox, iRay).xyz;
+	vec3 refVec = reflect(-camDir, normal);
 
-    if (depth == 1.0)
-    {
-        outColor = texture(skybox, iRay);
-        return;
-    }
+	vec3 F0 = vec3(0.04);
+	F0 = mix(F0, albedo, metallic);
 
-    // Materials
-    vec3 Fdielectric = vec3(0.04);
+	if(depth == 1.0)
+	{
+		vec3 sun =
+			vec3(1) *
+			pow(clamp(
+					dot(normalize(iRay),
+						normalize(
+							ubo.lightDirection)),
+					0,
+					1),
+				100) *
+			50;
+		color = skyColor * 1 + sun;
+	}
+	else
+	{
+		color =
+			brdf(normalize(ubo.lightDirection),
+				 vec3(1) * ubo.lightIntensity,
+				 position,
+				 normal,
+				 ubo.cameraPosition.xyz,
+				 albedo,
+				 F0,
+				 roughness,
+				 metallic);
+		vec3 N = normal;
+		vec3 V = normalize(
+			ubo.cameraPosition.xyz - position);
+		vec3 kS = fresnelSchlick(
+			max(dot(N, V), 0.0), F0);
+		vec3 kD = 1.0 - kS;
+		kD *= 1.0 - metallic;
+		vec3 irradiance =
+			texture(skybox, refVec).rgb;
+		vec3 diffuse = irradiance * albedo;
+		vec3 F = fresnelSchlickRoughness(
+			max(dot(N, V), 0.0), F0, roughness);
+		vec3 specular = irradiance * F;
+		vec3 ambient = (kD * diffuse + specular) *
+					   ubo.ambientLight;
 
-	vec3 Lo = normalize(ubo.cameraPosition.xyz - position);
-
-	vec3 N = normal;
-	
-	float cosLo = max(0.0, dot(N, Lo));
-		
-	vec3 Lr = 2.0 * cosLo * N - Lo;
-
-	vec3 F0 = mix(Fdielectric, albedo, metallic);
-
-	vec3 directLighting = albedo.rgb * ubo.ambientLight;
-
-    vec3 Li = normalize(ubo.lightDirection);
-    vec3 Lradiance = vec3(ubo.lightIntensity);
-
-    vec3 Lh = normalize(Li + Lo);
-
-    float cosLi = max(0.0, dot(N, Li));
-    float cosLh = max(0.0, dot(N, Lh));
-
-    vec3 F  = fresnelSchlick(F0, max(0.0, dot(Lh, Lo)));
-    float D = ndfGGX(cosLh, roughness);
-    float G = gaSchlickGGX(cosLi, cosLo, roughness);
-
-    vec3 kd = mix(vec3(1.0) - F, vec3(0.0), metallic);
-
-    vec3 diffuseBRDF = kd * albedo;
-
-    vec3 specularBRDF = (F * D * G) / max(Epsilon, 4.0 * cosLi * cosLo);
-
-    directLighting += (diffuseBRDF + specularBRDF) * Lradiance * cosLi;
-
-    outColor = vec4(ACESFilmSimple(directLighting * ubo.exposure), 1);
+		color += ambient;
+	}
+	outColor = vec4(
+		ACESFilmSimple(color * ubo.exposure), 1);
 }

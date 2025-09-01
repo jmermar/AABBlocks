@@ -610,7 +610,7 @@ void DeferredBuffers::create(VkDevice device,
 		device, vma, size, 1);
 	material.createRGBATexture(
 		device, vma, size, 1);
-	pos.createRGBA16Texture(device, vma, size, 1);
+	pos.createRGBA32Texture(device, vma, size, 1);
 }
 
 void DeferredBuffers::destroy(

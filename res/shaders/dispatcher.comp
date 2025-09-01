@@ -1,106 +1,142 @@
 #version 460
 #extension GL_EXT_nonuniform_qualifier : require
 #extension GL_EXT_buffer_reference : require
+#include "includes/globalData.h"
 // size of a workgroup for compute
 layout(local_size_x = 256) in;
 
-
-struct ChunkFace {
+struct ChunkFace
+{
 	uint posAndFace;
 	uint textureId;
 };
 
-layout(std430, buffer_reference, buffer_reference_align = 8) readonly buffer FacesAddr {
+layout(std430,
+	   buffer_reference,
+	   buffer_reference_align =
+		   8) readonly buffer FacesAddr
+{
 	ChunkFace faces[];
 };
 
-struct ChunkData {
-    FacesAddr faces;
-    vec4 pos;
-    uint vertexCount;
+struct ChunkData
+{
+	FacesAddr faces;
+	vec4 pos;
+	uint vertexCount;
 };
 
-struct VkDrawIndirectCommand {
-    uint vertexCount;
-    uint instanceCount;
-    uint firstVertex;
-    uint firstInstance;
+struct VkDrawIndirectCommand
+{
+	uint vertexCount;
+	uint instanceCount;
+	uint firstVertex;
+	uint firstInstance;
 };
 
-layout(set = 0, binding = 0, std140) readonly uniform CameraData {
-    mat4 proj;
-    mat4 view;
-    mat4 projView;
-    mat4 iProjViewMatrix;
-	mat4 iViewMatrix;
-	mat4 iProjMatrix;
-    vec4 planes[6];
-} ubo;
+layout(set = 1,
+	   binding = 1,
+	   std430) writeonly buffer IndirectDraws
+{
+	VkDrawIndirectCommand commands[];
+}
+drawCommand;
 
-layout(set=1, binding = 1, std430) writeonly buffer IndirectDraws {
-    VkDrawIndirectCommand commands[];
-} drawCommand;
+layout(std430,
+	   set = 1,
+	   binding = 0) readonly buffer Chunks
+{
+	ChunkData chunks[];
+}
+chunks;
 
-layout(std430, set=1, binding = 0) readonly buffer Chunks {
-    ChunkData chunks[];
-} chunks;
+layout(std430,
+	   set = 1,
+	   binding = 2) buffer MultiDrawData
+{
+	uint drawCounts;
+	uint maxDraws;
+}
+drawData;
 
+layout(push_constant) uniform PushConstants
+{
+	uint nChunks;
+}
+pc;
 
-layout(std430, set=1, binding = 2) buffer MultiDrawData {
-    uint drawCounts;
-    uint maxDraws;
-} drawData;
+bool isVisible(vec3 min)
+{
+	vec3 max = min + vec3(1, 1, 1) * 32;
+	bool visible = true;
+	for(int i = 0; i < 6; ++i)
+	{
+		vec4 plane = ubo.planes[i];
 
-layout(push_constant) uniform PushConstants {
-    uint nChunks;
-} pc;
+		vec3 negativeVertex =
+			vec3(plane.x < 0.0 ? max.x : min.x,
+				 plane.y < 0.0 ? max.y : min.y,
+				 plane.z < 0.0 ? max.z : min.z);
 
-bool isVisible(vec3 min) {
-    vec3 max = min + vec3(1, 1, 1) * 32;
-    bool visible = true;
-    for (int i = 0; i < 6; ++i) {
-        vec4 plane = ubo.planes[i];
-
-        vec3 negativeVertex = vec3(
-            plane.x < 0.0 ? max.x : min.x,
-            plane.y < 0.0 ? max.y : min.y,
-            plane.z < 0.0 ? max.z : min.z
-        );
-
-        bool r = dot(plane, vec4(min.x, min.y, min.z, 1)) < 0;
-        r = r && dot(plane, vec4(min.x, min.y, max.z, 1)) < 0;
-        r = r && dot(plane, vec4(min.x, max.y, min.z, 1)) < 0;
-        r = r && dot(plane, vec4(min.x, max.y, max.z, 1)) < 0;
-        r = r && dot(plane, vec4(max.x, min.y, min.z, 1)) < 0;
-        r = r && dot(plane, vec4(max.x, min.y, max.z, 1)) < 0;
-        r = r && dot(plane, vec4(max.x, max.y, min.z, 1)) < 0;
-        r = r && dot(plane, vec4(max.x, max.y, max.z, 1)) < 0;
-        visible = visible && !r;
-    }
-    return visible;
+		bool r =
+			dot(plane,
+				vec4(min.x, min.y, min.z, 1)) < 0;
+		r = r &&
+			dot(plane,
+				vec4(min.x, min.y, max.z, 1)) < 0;
+		r = r &&
+			dot(plane,
+				vec4(min.x, max.y, min.z, 1)) < 0;
+		r = r &&
+			dot(plane,
+				vec4(min.x, max.y, max.z, 1)) < 0;
+		r = r &&
+			dot(plane,
+				vec4(max.x, min.y, min.z, 1)) < 0;
+		r = r &&
+			dot(plane,
+				vec4(max.x, min.y, max.z, 1)) < 0;
+		r = r &&
+			dot(plane,
+				vec4(max.x, max.y, min.z, 1)) < 0;
+		r = r &&
+			dot(plane,
+				vec4(max.x, max.y, max.z, 1)) < 0;
+		visible = visible && !r;
+	}
+	return visible;
 }
 
-void main() {
-    uint gID = gl_GlobalInvocationID.x;
+void main()
+{
+	uint gID = gl_GlobalInvocationID.x;
 
-    if (gl_LocalInvocationIndex == 0) {
-        drawData.drawCounts = 0;
-        drawData.maxDraws = pc.nChunks;
-    }
-    barrier();
+	if(gl_LocalInvocationIndex == 0)
+	{
+		drawData.drawCounts = 0;
+		drawData.maxDraws = pc.nChunks;
+	}
+	barrier();
 
-    if (gID < pc.nChunks) {
-        ChunkData chunk = chunks.chunks[gID];
-        if (isVisible(chunk.pos.xyz)) {
-            uint index = atomicAdd(drawData.drawCounts, 1);
+	if(gID < pc.nChunks)
+	{
+		ChunkData chunk = chunks.chunks[gID];
+		if(isVisible(chunk.pos.xyz))
+		{
+			uint index =
+				atomicAdd(drawData.drawCounts, 1);
 
-            drawCommand.commands[index].instanceCount = 1;
+			drawCommand.commands[index]
+				.instanceCount = 1;
 
-            drawCommand.commands[index].firstVertex = 0;
+			drawCommand.commands[index]
+				.firstVertex = 0;
 
-            drawCommand.commands[index].vertexCount = chunk.vertexCount;
+			drawCommand.commands[index]
+				.vertexCount = chunk.vertexCount;
 
-            drawCommand.commands[index].firstInstance = gID;
-        }
-    }
+			drawCommand.commands[index]
+				.firstInstance = gID;
+		}
+	}
 }

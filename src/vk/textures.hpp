@@ -360,6 +360,31 @@ struct Texture2D
 		__create(device, vma);
 	}
 	void
+	createRGBA32Texture(VkDevice device,
+						VmaAllocator vma,
+						VkExtent2D size,
+						uint32_t layers = 1,
+						uint32_t mipLevels = 1)
+	{
+		this->extent = size;
+		this->layers = layers;
+		this->mipLevels = mipLevels;
+		this->format =
+			VK_FORMAT_R32G32B32A32_SFLOAT;
+		this->usage =
+			VK_IMAGE_USAGE_SAMPLED_BIT |
+			VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+			VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+		this->aspect = VK_IMAGE_ASPECT_COLOR_BIT;
+		this->imageType = VK_IMAGE_TYPE_2D;
+		this->viewType =
+			(layers > 1)
+				? VK_IMAGE_VIEW_TYPE_2D_ARRAY
+				: VK_IMAGE_VIEW_TYPE_2D;
+		__create(device, vma);
+	}
+	void
 	createDepthTexture(VkDevice device,
 					   VmaAllocator vma,
 					   VkExtent2D size,

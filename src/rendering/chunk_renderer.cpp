@@ -17,6 +17,10 @@ struct Vertex
 	float pad;
 	glm::vec3 normal;
 	float pad2;
+	glm::vec3 tangent;
+	float pad1;
+	glm::vec3 bitangent;
+	float pad2_;
 	glm::vec2 uv;
 	float pad3[2];
 };
@@ -209,49 +213,79 @@ void ChunkDrawCommandsDispatcher::dispatch(
 	vkCmdDispatch(cmd, groupCount, 1, 1);
 }
 
-constexpr Face pushFace(glm::vec3 top,
-						glm::vec3 normal,
-						glm::vec3 right,
-						glm::vec3 down)
+Face pushFace(glm::vec3 top,
+			  glm::vec3 normal,
+			  glm::vec3 right,
+			  glm::vec3 down)
 {
 
 	Face pushFace;
-	pushFace.vertices[2] = {top,
-							0.f,
-							normal,
-							0.f,
-							glm::vec2(0, 0),
-							{0.f, 0.f}};
-	pushFace.vertices[1] = {top + down,
-							0.f,
-							normal,
-							0.f,
-							glm::vec2(0, 1),
-							{0.f, 0.f}};
-	pushFace.vertices[0] = {top + down + right,
-							0.f,
-							normal,
-							0.f,
-							glm::vec2(1, 1),
-							{0.f, 0.f}};
-	pushFace.vertices[5] = {top,
-							0.f,
-							normal,
-							0.f,
-							glm::vec2(0, 0),
-							{0.f, 0.f}};
-	pushFace.vertices[4] = {top + down + right,
-							0,
-							normal,
-							0.f,
-							glm::vec2(1, 1),
-							{0.f, 0.f}};
-	pushFace.vertices[3] = {top + right,
-							0.f,
-							normal,
-							0.f,
-							glm::vec2(1, 0),
-							{0.f, 0.f}};
+	pushFace.vertices[2] = {
+		top,
+		0.f,
+		normal,
+		0.f,
+		right,
+		0.f,
+		glm::cross(right, normal),
+		0.f,
+		glm::vec2(0, 0),
+		{0.f, 0.f}};
+	pushFace.vertices[1] = {
+		top + down,
+		0.f,
+		normal,
+		0.f,
+		right,
+		0.f,
+		glm::cross(right, normal),
+		0.f,
+		glm::vec2(0, 1),
+		{0.f, 0.f}};
+	pushFace.vertices[0] = {
+		top + down + right,
+		0.f,
+		normal,
+		0.f,
+		right,
+		0.f,
+		glm::cross(right, normal),
+		0.f,
+		glm::vec2(1, 1),
+		{0.f, 0.f}};
+	pushFace.vertices[5] = {
+		top,
+		0.f,
+		normal,
+		0.f,
+		right,
+		0.f,
+		glm::cross(right, normal),
+		0.f,
+		glm::vec2(0, 0),
+		{0.f, 0.f}};
+	pushFace.vertices[4] = {
+		top + down + right,
+		0,
+		normal,
+		0.f,
+		right,
+		0.f,
+		glm::cross(right, normal),
+		0.f,
+		glm::vec2(1, 1),
+		{0.f, 0.f}};
+	pushFace.vertices[3] = {
+		top + right,
+		0.f,
+		normal,
+		0.f,
+		right,
+		0.f,
+		glm::cross(right, normal),
+		0.f,
+		glm::vec2(1, 0),
+		{0.f, 0.f}};
 	return pushFace;
 };
 
@@ -442,7 +476,7 @@ void ChunkRenderer::createPipeline()
 		VK_FORMAT_R8G8B8A8_UNORM,
 		VK_FORMAT_R8G8B8A8_UNORM,
 		VK_FORMAT_R8G8B8A8_UNORM,
-		VK_FORMAT_R16G16B16A16_SFLOAT};
+		VK_FORMAT_R32G32B32A32_SFLOAT};
 
 	//connect the image format we will draw into, from draw image
 	pipelineBuilder.set_color_attachment_format(
