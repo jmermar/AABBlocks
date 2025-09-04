@@ -317,6 +317,7 @@ struct Texture2D
 						   uint32_t layers = 1,
 						   uint32_t mipLevels = 1)
 	{
+		layout = VK_IMAGE_LAYOUT_UNDEFINED;
 		this->extent = size;
 		this->layers = layers;
 		this->mipLevels = mipLevels;
@@ -341,6 +342,7 @@ struct Texture2D
 						uint32_t layers = 1,
 						uint32_t mipLevels = 1)
 	{
+		layout = VK_IMAGE_LAYOUT_UNDEFINED;
 		this->extent = size;
 		this->layers = layers;
 		this->mipLevels = mipLevels;
@@ -366,6 +368,7 @@ struct Texture2D
 						uint32_t layers = 1,
 						uint32_t mipLevels = 1)
 	{
+		layout = VK_IMAGE_LAYOUT_UNDEFINED;
 		this->extent = size;
 		this->layers = layers;
 		this->mipLevels = mipLevels;
@@ -391,6 +394,7 @@ struct Texture2D
 					   uint32_t layers = 1,
 					   uint32_t mipLevels = 1)
 	{
+		layout = VK_IMAGE_LAYOUT_UNDEFINED;
 		this->extent = size;
 		this->layers = layers;
 		this->mipLevels = mipLevels;
@@ -413,6 +417,7 @@ struct Texture2D
 					   VkExtent2D size,
 					   uint32_t mipLevels = 1)
 	{
+		layout = VK_IMAGE_LAYOUT_UNDEFINED;
 		this->extent = size;
 		this->layers = 6;
 		this->mipLevels = mipLevels;
