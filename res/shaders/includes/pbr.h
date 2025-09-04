@@ -113,3 +113,17 @@ vec3 brdf(vec3 lightDirection,
 		   radiance *
 		   NdotL; // note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
 }
+
+vec3 applyFog(vec3 color,
+			  vec3 fragPos,
+			  vec3 viewPos,
+			  vec3 fogColor,
+			  float fogDensity)
+{
+	float distance = length(viewPos - fragPos);
+	float fogFactor =
+		1.0 -
+		exp(-pow((distance * fogDensity), 2.0));
+	fogFactor = clamp(fogFactor, 0.0, 1.0);
+	return mix(color, fogColor, fogFactor);
+}

@@ -94,6 +94,11 @@ void main()
 			ubo.ambientLight;
 
 		color += ambient;
+		color = applyFog(color,
+						 position,
+						 ubo.cameraPosition,
+						 skyColor,
+						 ubo.fogDensity);
 	}
 	outColor = vec4(
 		ACESFilmSimple(color * ubo.exposure), 1);

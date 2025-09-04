@@ -81,6 +81,12 @@ void DebugRenderer::drawDebugUI()
 					  0.01f,
 					  0.1f,
 					  "%.3f");
+
+	ImGui::InputFloat("Fog",
+					  &fogIntensity,
+					  0.01f,
+					  0.1f,
+					  "%.3f");
 	ImGui::End();
 }
 void DebugRenderer::render(VkCommandBuffer cmd)

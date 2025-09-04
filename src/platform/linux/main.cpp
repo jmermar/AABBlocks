@@ -107,6 +107,7 @@ int main(int argc, char** argv)
 	renderState.camera.forward =
 		glm::vec3(0, 0, 1);
 	renderState.cullCamera = renderState.camera;
+	renderState.camera.zfar = 2000.f;
 	uint64_t frameDelta = 0;
 	float deltaTime = 0;
 

@@ -16,8 +16,11 @@ struct MappedBuffer
 	void create(size_t size);
 	void destroy();
 
+	void flush();
+
 	void* getData();
-	VkDeviceSize getBaseAddr(uint32_t frameNumber);
+	VkDeviceSize
+	getBaseAddr(uint32_t frameNumber);
 };
 } // namespace render
 } // namespace vblck

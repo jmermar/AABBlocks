@@ -44,6 +44,16 @@ void MappedBuffer::create(size_t size)
 		render->vma, buffer.allocation, &data);
 }
 
+void MappedBuffer::flush()
+{
+	auto* r = Renderer::get();
+	vmaFlushAllocation(
+		r->vma,
+		buffer.allocation,
+		getBaseAddr(r->getFrameIndex()),
+		alignedSize);
+}
+
 void MappedBuffer::destroy()
 {
 	auto* r = Renderer::get();

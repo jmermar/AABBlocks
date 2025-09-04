@@ -27,6 +27,9 @@ struct DebugRenderer
 	glm::vec3 lightDir = {1.f, 1.f, 3.f};
 	float lightIntensity = 2.f;
 
+	float fogIntensity = 0.005f;
+	glm::vec3 fogColor = {0.5f, 0.5f, 0.5f};
+
 	float exposure = 0.6f;
 
 	void drawDebugUI();

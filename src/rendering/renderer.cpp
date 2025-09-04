@@ -30,6 +30,8 @@ struct alignas(16) UniformGlobalData
 	float ambient;
 	glm::vec3 lightDir;
 	float lightIntensity;
+	glm::vec3 fogColor;
+	float fogIntensity;
 	float exposure;
 };
 
@@ -80,7 +82,8 @@ void GlobalRenderData::writeDescriptors(
 		0,
 		globalBuffer.buffer.buffer,
 		globalBuffer.size,
-		0,
+		globalBuffer.getBaseAddr(
+			render->getFrameIndex()),
 		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
 	writer.write(render->device,
 				 getGlobalDescriptor());
@@ -391,35 +394,43 @@ void Renderer::renderFrame(RenderState& state)
 	auto* cmd =
 		getCurrentFrame().mainCommandBuffer.get();
 
-	auto* uniformGlobalData =
-		(UniformGlobalData*)
-			renderData.globalBuffer.getData();
-	uniformGlobalData->viewMatrix =
+	UniformGlobalData uniformGlobalData;
+	uniformGlobalData.viewMatrix =
 		state.camera.getView();
-	uniformGlobalData->projMatrix =
+	uniformGlobalData.projMatrix =
 		state.camera.getProjection();
-	uniformGlobalData->projViewMatrix =
-		uniformGlobalData->projMatrix *
-		uniformGlobalData->viewMatrix;
-	uniformGlobalData->camFrustum =
+	uniformGlobalData.projViewMatrix =
+		uniformGlobalData.projMatrix *
+		uniformGlobalData.viewMatrix;
+	uniformGlobalData.camFrustum =
 		computedUtils.camFrustum;
-	uniformGlobalData->camPos =
+	uniformGlobalData.camPos =
 		glm::vec4(state.camera.position, 1.0f);
-	uniformGlobalData->ambient =
+	uniformGlobalData.ambient =
 		debugRenderer.ambient;
-	uniformGlobalData->lightDir =
+	uniformGlobalData.lightDir =
 		debugRenderer.lightDir;
-	uniformGlobalData->lightIntensity =
+	uniformGlobalData.lightIntensity =
 		debugRenderer.lightIntensity;
-	uniformGlobalData->exposure =
+	uniformGlobalData.exposure =
 		debugRenderer.exposure;
-	uniformGlobalData->iProjViewMatrix =
+	uniformGlobalData.iProjViewMatrix =
 		glm::inverse(
-			uniformGlobalData->projViewMatrix);
-	uniformGlobalData->iViewMatrix = glm::inverse(
-		uniformGlobalData->viewMatrix);
-	uniformGlobalData->iProjMatrix = glm::inverse(
-		uniformGlobalData->projMatrix);
+			uniformGlobalData.projViewMatrix);
+	uniformGlobalData.iViewMatrix = glm::inverse(
+		uniformGlobalData.viewMatrix);
+	uniformGlobalData.iProjMatrix = glm::inverse(
+		uniformGlobalData.projMatrix);
+	uniformGlobalData.fogColor =
+		debugRenderer.fogColor;
+	uniformGlobalData.fogIntensity =
+		debugRenderer.fogIntensity;
+
+	memcpy(renderData.globalBuffer.getData(),
+		   &uniformGlobalData,
+		   sizeof(UniformGlobalData));
+
+	renderData.globalBuffer.flush();
 
 	cmd->begin();
 	renderData.writeDescriptors(cmd->getCmd());

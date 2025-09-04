@@ -12,6 +12,8 @@ layout(set = 0,
 	float ambientLight;
 	vec3 lightDirection;
 	float lightIntensity;
+	vec3 fogColor;
+	float fogDensity;
 	float exposure;
 }
 ubo;

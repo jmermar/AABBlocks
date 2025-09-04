@@ -85,6 +85,7 @@ struct ChunkRenderer
 	}
 
 	void render(VkCommandBuffer cmd);
+	void renderShadowMaps(VkCommandBuffer cmd);
 };
 } // namespace render
 } // namespace vblck
