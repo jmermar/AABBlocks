@@ -101,11 +101,11 @@ void Texture2D::__create(VkDevice device,
 	samplerInfo.magFilter = VK_FILTER_LINEAR;
 	samplerInfo.minFilter = VK_FILTER_LINEAR;
 	samplerInfo.addressModeU =
-		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		VK_SAMPLER_ADDRESS_MODE_REPEAT;
 	samplerInfo.addressModeV =
-		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		VK_SAMPLER_ADDRESS_MODE_REPEAT;
 	samplerInfo.addressModeW =
-		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		VK_SAMPLER_ADDRESS_MODE_REPEAT;
 	samplerInfo.anisotropyEnable = VK_FALSE;
 	samplerInfo.maxAnisotropy = 1.0f;
 	samplerInfo.borderColor =

@@ -97,7 +97,8 @@ void World::generateChunkMeshes()
 	for(auto [id, c] : dirtyChunks)
 	{
 		ChunkGenerateCommand cmd;
-		cmd.data = c->generateChunkData();
+		cmd.data = c->generateChunkData(
+			cmd.first, cmd.count);
 		if(c->meshData)
 		{
 			renderer->worldRenderer.chunkRenderer
@@ -118,6 +119,8 @@ void World::generateChunkMeshes()
 		cmd.chunk->meshData =
 			renderer->worldRenderer.chunkRenderer
 				.loadChunk(cmd.position,
+						   cmd.first,
+						   cmd.count,
 						   cmd.data);
 	}
 	if(chunkGenerateCommands.size() > 0)

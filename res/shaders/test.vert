@@ -1,17 +1,12 @@
 #version 450
 #extension GL_EXT_buffer_reference : require
+#include "includes/chunks.h"
 #include "includes/globalData.h"
 
 layout(location = 0) out vec3 outUv;
 layout(location = 1) out vec3 outNorm;
 layout(location = 2) out vec3 outPos;
 layout(location = 3) out mat3 outTBN;
-
-struct ChunkFace
-{
-	uint posAndFace;
-	uint textureId;
-};
 
 struct Vertex
 {
@@ -20,21 +15,6 @@ struct Vertex
 	vec3 tangent;
 	vec3 bitangent;
 	vec2 uv;
-};
-
-layout(std430,
-	   buffer_reference,
-	   buffer_reference_align =
-		   8) readonly buffer FacesAddr
-{
-	ChunkFace faces[];
-};
-
-struct ChunkData
-{
-	FacesAddr faces;
-	vec4 position;
-	uint vertexCount;
 };
 
 layout(std430,
@@ -75,14 +55,16 @@ void main()
 
 	outTBN = transpose(TBN);
 
+	vec3 position = (vec3(x, y, z) + vertex.pos) *
+					chunk.scale;
+	;
+
 	gl_Position =
 		ubo.projView *
-		vec4((chunk.position.xyz + vec3(x, y, z) +
-			  vertex.pos),
-			 1);
-	outUv = vec3(vertex.uv, face.textureId);
+		vec4((chunk.position.xyz + position), 1);
+	outUv = vec3(vertex.uv * chunk.scale,
+				 face.textureId);
 
 	outNorm = vertex.norm;
-	outPos = chunk.position.xyz + vec3(x, y, z) +
-			 vertex.pos;
+	outPos = chunk.position.xyz + position;
 }

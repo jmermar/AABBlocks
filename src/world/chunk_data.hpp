@@ -27,25 +27,31 @@ struct Chunk
 	render::ChunkData* meshData{};
 
 	std::vector<ChunkFaceData>
-	generateChunkData();
-	const BlockData*
-	getBlock(int32_t x, int32_t y, int32_t z);
+	generateChunkData(uint32_t first[4],
+					  uint32_t count[4]);
+	const BlockData* getBlock(int32_t x,
+							  int32_t y,
+							  int32_t z,
+							  int lod = 0);
 	void regenerateLODs();
-	inline bool
-	isSolid(int32_t x, int32_t y, int32_t z)
+	inline bool isSolid(int32_t x,
+						int32_t y,
+						int32_t z,
+						size_t lod = 0)
 	{
-		auto* bd = getBlock(x, y, z);
+		auto* bd = getBlock(x, y, z, lod);
 		return bd && bd->solid;
 	}
 
-	inline uint16_t getBlockLOD(uint16_t x,
-								uint16_t y,
-								uint16_t z,
+	inline uint16_t getBlockLOD(int16_t x,
+								int16_t y,
+								int16_t z,
 								size_t lod = 0)
 	{
-		if(x >= CHUNK_SIZE >> lod ||
-		   y >= CHUNK_SIZE >> lod ||
-		   z >= CHUNK_SIZE >> lod)
+		if(x < 0 || y < 0 || z < 0 ||
+		   x >= (int16_t)CHUNK_SIZE >> lod ||
+		   y >= (int16_t)CHUNK_SIZE >> lod ||
+		   z >= (int16_t)CHUNK_SIZE >> lod)
 			return 0;
 		if(lod == 0)
 			return blocks[z][y][x];
@@ -64,9 +70,9 @@ struct Chunk
 							uint16_t id,
 							size_t lod = 0)
 	{
-		if(x >= CHUNK_SIZE >> lod ||
-		   y >= CHUNK_SIZE >> lod ||
-		   z >= CHUNK_SIZE >> lod)
+		if(x >= (int16_t)CHUNK_SIZE >> lod ||
+		   y >= (int16_t)CHUNK_SIZE >> lod ||
+		   z >= (int16_t)CHUNK_SIZE >> lod)
 			return;
 		if(lod == 0)
 			blocks[z][y][x] = id;
@@ -93,6 +99,10 @@ struct Chunk
 	}
 
 	uint64_t getID();
+
+	void _generateLODData(
+		std::vector<ChunkFaceData>& data,
+		size_t lod);
 };
 } // namespace world
 } // namespace vblck

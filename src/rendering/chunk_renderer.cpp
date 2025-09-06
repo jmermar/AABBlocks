@@ -31,7 +31,9 @@ struct ChunkDataBuffer
 	float pad[2];
 	glm::vec3 position;
 	float pad2[1];
-	uint32_t vertexCount;
+	uint32_t vertexCount[4];
+	uint32_t firstVertex[4];
+	float scale;
 	float pad3[3];
 };
 
@@ -503,7 +505,14 @@ void ChunkRenderer::regenerateChunks()
 	{
 		data[i].chunkFaces = chunk->vertexAddr;
 		data[i].position = chunk->position;
-		data[i].vertexCount = chunk->numVertices;
+		for(int e = 0; e < 4; e++)
+		{
+			data[i].vertexCount[e] =
+				chunk->first[e];
+			data[i].firstVertex[e] =
+				chunk->count[e];
+			data[i].scale = (float)(1 << e);
+		}
 		i++;
 	}
 
@@ -553,6 +562,8 @@ void ChunkRenderer::destroy()
 
 ChunkData* ChunkRenderer ::loadChunk(
 	glm::vec3 position,
+	uint32_t first[4],
+	uint32_t count[4],
 	std::span<ChunkFaceData> data)
 {
 	auto* chunk = new ChunkData;
@@ -572,7 +583,11 @@ ChunkData* ChunkRenderer ::loadChunk(
 	render->bufferWritter.writeToSSBO(
 		staging.data.buffer, &chunk->vertexData);
 	staging.destroy(&render->frameDeletionQueue);
-	chunk->numVertices = data.size() * 6;
+	for(int i = 0; i < 4; i++)
+	{
+		chunk->count[i] = count[i];
+		chunk->first[i] = first[i];
+	}
 	VkBufferDeviceAddressInfo addrInfo{
 		.sType =
 			VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO};

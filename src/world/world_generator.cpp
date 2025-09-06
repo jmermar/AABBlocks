@@ -177,7 +177,9 @@ void WorldGenerator::generateChunkData()
 					world->chunkAt(cx, cy, cz);
 				ChunkGenerateCommand genCmd{};
 				genCmd.data =
-					chunk->generateChunkData();
+					chunk->generateChunkData(
+						genCmd.first,
+						genCmd.count);
 				genCmd.chunk = chunk;
 				if(genCmd.data.size() > 0)
 				{

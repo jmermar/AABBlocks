@@ -48,91 +48,29 @@ u_int16_t modalId(Chunk* chunk,
 }
 
 std::vector<ChunkFaceData>
-Chunk::generateChunkData()
+Chunk::generateChunkData(uint32_t first[4],
+						 uint32_t count[4])
 {
+	regenerateLODs();
 	std::vector<ChunkFaceData> ret;
-	for(uint32_t z = 0; z < CHUNK_SIZE; z++)
-	{
-		for(uint32_t y = 0; y < CHUNK_SIZE; y++)
-		{
-			for(uint32_t x = 0; x < CHUNK_SIZE;
-				x++)
-			{
-				auto* block = getBlock(x, y, z);
-				if(block && block->solid)
-				{
-					ChunkFaceData face;
-					face.x = x;
-					face.y = y;
-					face.z = z;
-
-					if(!isSolid(x - 1, y, z))
-					{
-						face.face =
-							CHUNK_FACES_LEFT;
-						face.textureId =
-							block->faces
-								[CHUNK_FACES_LEFT];
-						ret.push_back(face);
-					}
-
-					if(!isSolid(x + 1, y, z))
-					{
-						face.face =
-							CHUNK_FACES_RIGHT;
-						face.textureId =
-							block->faces
-								[CHUNK_FACES_RIGHT];
-						ret.push_back(face);
-					}
-
-					if(!isSolid(x, y, z - 1))
-					{
-						face.face =
-							CHUNK_FACES_BACK;
-						face.textureId =
-							block->faces
-								[CHUNK_FACES_BACK];
-						ret.push_back(face);
-					}
-
-					if(!isSolid(x, y, z + 1))
-					{
-						face.face =
-							CHUNK_FACES_FRONT;
-						face.textureId =
-							block->faces
-								[CHUNK_FACES_FRONT];
-						ret.push_back(face);
-					}
-
-					if(!isSolid(x, y + 1, z))
-					{
-						face.face =
-							CHUNK_FACES_TOP;
-						face.textureId =
-							block->faces
-								[CHUNK_FACES_TOP];
-						ret.push_back(face);
-					}
-
-					if(!isSolid(x, y - 1, z))
-					{
-						face.face =
-							CHUNK_FACES_BOTTOM;
-						face.textureId =
-							block->faces
-								[CHUNK_FACES_BOTTOM];
-						ret.push_back(face);
-					}
-				}
-			}
-		}
-	}
+	first[0] = ret.size();
+	_generateLODData(ret, 0);
+	count[0] = ret.size() - first[0];
+	first[1] = ret.size();
+	_generateLODData(ret, 1);
+	count[1] = ret.size() - first[1];
+	first[2] = ret.size();
+	_generateLODData(ret, 2);
+	count[2] = ret.size() - first[2];
+	first[3] = ret.size();
+	_generateLODData(ret, 3);
+	count[3] = ret.size() - first[3];
 	return ret;
 }
-const BlockData*
-Chunk::getBlock(int32_t x, int32_t y, int32_t z)
+const BlockData* Chunk::getBlock(int32_t x,
+								 int32_t y,
+								 int32_t z,
+								 int lod)
 {
 	auto* world = World::get();
 	if(x < 0 || y < 0 || z < 0 ||
@@ -140,14 +78,21 @@ Chunk::getBlock(int32_t x, int32_t y, int32_t z)
 	   y >= (int32_t)CHUNK_SIZE ||
 	   z >= (int32_t)CHUNK_SIZE)
 	{
-		return world->getBlock(
-			cx * CHUNK_SIZE + x,
-			cy * CHUNK_SIZE + y,
-			cz * CHUNK_SIZE + z);
+		if(lod == 0)
+		{
+			return world->getBlock(
+				cx * CHUNK_SIZE + x,
+				cy * CHUNK_SIZE + y,
+				cz * CHUNK_SIZE + z);
+		}
+		else
+		{
+			return 0;
+		}
 	}
 
 	return world->blockDatabase.getBlockFromId(
-		blocks[z][y][x]);
+		getBlockLOD(x, y, z, lod));
 }
 void Chunk::regenerateLODs()
 {
@@ -180,6 +125,92 @@ uint64_t Chunk::getID()
 	return cx * world->worldSize *
 			   world->worldSize +
 		   cz * world->worldSize + cy;
+}
+void Chunk::_generateLODData(
+	std::vector<ChunkFaceData>& data, size_t lod)
+{
+	for(uint32_t z = 0; z < CHUNK_SIZE >> lod;
+		z++)
+	{
+		for(uint32_t y = 0; y < CHUNK_SIZE >> lod;
+			y++)
+		{
+			for(uint32_t x = 0;
+				x < CHUNK_SIZE >> lod;
+				x++)
+			{
+				auto* block =
+					getBlock(x, y, z, lod);
+				if(block && block->solid)
+				{
+					ChunkFaceData face;
+					face.x = x;
+					face.y = y;
+					face.z = z;
+
+					if(!isSolid(x - 1, y, z, lod))
+					{
+						face.face =
+							CHUNK_FACES_LEFT;
+						face.textureId =
+							block->faces
+								[CHUNK_FACES_LEFT];
+						data.push_back(face);
+					}
+
+					if(!isSolid(x + 1, y, z, lod))
+					{
+						face.face =
+							CHUNK_FACES_RIGHT;
+						face.textureId =
+							block->faces
+								[CHUNK_FACES_RIGHT];
+						data.push_back(face);
+					}
+
+					if(!isSolid(x, y, z - 1, lod))
+					{
+						face.face =
+							CHUNK_FACES_BACK;
+						face.textureId =
+							block->faces
+								[CHUNK_FACES_BACK];
+						data.push_back(face);
+					}
+
+					if(!isSolid(x, y, z + 1, lod))
+					{
+						face.face =
+							CHUNK_FACES_FRONT;
+						face.textureId =
+							block->faces
+								[CHUNK_FACES_FRONT];
+						data.push_back(face);
+					}
+
+					if(!isSolid(x, y + 1, z, lod))
+					{
+						face.face =
+							CHUNK_FACES_TOP;
+						face.textureId =
+							block->faces
+								[CHUNK_FACES_TOP];
+						data.push_back(face);
+					}
+
+					if(!isSolid(x, y - 1, z, lod))
+					{
+						face.face =
+							CHUNK_FACES_BOTTOM;
+						face.textureId =
+							block->faces
+								[CHUNK_FACES_BOTTOM];
+						data.push_back(face);
+					}
+				}
+			}
+		}
+	}
 }
 } // namespace world
 } // namespace vblck

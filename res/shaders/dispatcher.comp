@@ -1,30 +1,10 @@
 #version 460
 #extension GL_EXT_nonuniform_qualifier : require
 #extension GL_EXT_buffer_reference : require
+#include "includes/chunks.h"
 #include "includes/globalData.h"
 // size of a workgroup for compute
 layout(local_size_x = 256) in;
-
-struct ChunkFace
-{
-	uint posAndFace;
-	uint textureId;
-};
-
-layout(std430,
-	   buffer_reference,
-	   buffer_reference_align =
-		   8) readonly buffer FacesAddr
-{
-	ChunkFace faces[];
-};
-
-struct ChunkData
-{
-	FacesAddr faces;
-	vec4 pos;
-	uint vertexCount;
-};
 
 struct VkDrawIndirectCommand
 {
@@ -42,9 +22,7 @@ layout(set = 1,
 }
 drawCommand;
 
-layout(std430,
-	   set = 1,
-	   binding = 0) readonly buffer Chunks
+layout(std430, set = 1, binding = 0) buffer Chunks
 {
 	ChunkData chunks[];
 }
@@ -107,6 +85,20 @@ bool isVisible(vec3 min)
 	return visible;
 }
 
+uint getLOD(vec3 pos)
+{
+	float dist = length(ubo.cameraPosition.xyz -
+						(pos + vec3(16, 16, 16)));
+	if(dist < 256)
+		return 0;
+	else if(dist < 512)
+		return 1;
+	else if(dist < 1024)
+		return 2;
+	else
+		return 3;
+}
+
 void main()
 {
 	uint gID = gl_GlobalInvocationID.x;
@@ -121,19 +113,24 @@ void main()
 	if(gID < pc.nChunks)
 	{
 		ChunkData chunk = chunks.chunks[gID];
-		if(isVisible(chunk.pos.xyz))
+		if(isVisible(chunk.position.xyz))
 		{
+			uint lod = getLOD(chunk.position.xyz);
 			uint index =
 				atomicAdd(drawData.drawCounts, 1);
+
+			chunks.chunks[gID].scale = (1 << lod);
 
 			drawCommand.commands[index]
 				.instanceCount = 1;
 
 			drawCommand.commands[index]
-				.firstVertex = 0;
+				.firstVertex =
+				chunk.first[lod] * 6;
 
 			drawCommand.commands[index]
-				.vertexCount = chunk.vertexCount;
+				.vertexCount =
+				chunk.count[lod] * 6;
 
 			drawCommand.commands[index]
 				.firstInstance = gID;

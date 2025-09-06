@@ -5,7 +5,7 @@
 AABBlocks is a voxel game currently being developed in Vulkan and C++.  
 The project focuses on minimal gameplay features, but aims to implement modern rendering techniques found in contemporary games.
 
-## [Video demonstration of an early version](https://www.youtube.com/watch?v=LADutXLPXs4)
+## [Video demonstration of an early version](https://www.youtube.com/watch?v=L_QHcuafhk8)
 
 # Features
 
@@ -25,7 +25,7 @@ Supporting PBR textures is challenging due to the lack of a standard "PBR" textu
 
 Currently, only a single directional light is supported. Point lights and shadow casting are planned for future updates.
 
-## [WIP] Reflections
+## Reflections
 ![Reflections](screenshots/normals.png)
 
 Currently, an skybox is being used for calculating reflections, integrated in the pbr shader.
@@ -44,6 +44,13 @@ The game uses Dear ImGUI for the user interface and debugging options, allowing 
 ## GPU Culling and Instancing
 
 The engine supports GPU culling and instancing, both performed with compute shaders that prepare a multi-draw indirect call for all visible chunks (chunks within the view frustum). This greatly improves performance, although with minimal features, performance is not currently a major concern.
+
+## LOD
+
+![LOD](screenshots/lod.png)
+
+Chunk faces are generated at 4 LOD levels, in the command dispatch
+compute shader one level is selected depending on the chunk distance to camera. This have proven to greatly improve performance in large maps.
 
 ## Modern Vulkan Features
 
