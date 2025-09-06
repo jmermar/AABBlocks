@@ -71,7 +71,7 @@ void main()
 	vec3 T = vertex.tangent;
 	vec3 B = vertex.bitangent;
 	vec3 N = vertex.norm;
-	mat3 TBN = mat3(T, B, N);
+	mat3 TBN = mat3(-T, B, N);
 
 	outTBN = transpose(TBN);
 

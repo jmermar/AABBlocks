@@ -21,26 +21,42 @@ void Player::init()
 void Player::rotateY(float degrees)
 {
 	auto angle = glm::radians(degrees / 2.f);
-	glm::quat rotation(glm::cos(angle), glm::vec3(0, 1, 0) * glm::sin(angle));
-	glm::quat rotationC = glm::conjugate(rotation);
+	glm::quat rotation(glm::cos(angle),
+					   glm::vec3(0, 1, 0) *
+						   glm::sin(angle));
+	glm::quat rotationC =
+		glm::conjugate(rotation);
 
 	forward = rotation * forward * rotationC;
 }
 void Player::rotateX(float degrees)
 {
 	auto angle = glm::radians(degrees / 2.f);
-	glm::quat rotation(glm::cos(angle),
-					   glm::normalize(glm::cross(forward, glm::vec3(0, 1, 0))) * glm::sin(angle));
-	glm::quat rotationC = glm::conjugate(rotation);
+	glm::quat rotation(
+		glm::cos(angle),
+		glm::normalize(glm::cross(
+			forward, glm::vec3(0, 1, 0))) *
+			glm::sin(angle));
+	glm::quat rotationC =
+		glm::conjugate(rotation);
 
-	forward = rotation * forward * rotationC;
+	auto propForward =
+		rotation * forward * rotationC;
+
+	if(glm::degrees(asin(propForward.y)) >
+		   -85.f &&
+	   glm::degrees(asin(propForward.y)) < 85.f)
+	{
+		forward = propForward;
+	}
 }
 void Player::move(glm::vec3 delta)
 {
 	grounded = false;
 	if(delta.y < 0)
 	{
-		auto res = collisions::moveY(body, delta.y, &body);
+		auto res = collisions::moveY(
+			body, delta.y, &body);
 		if(res > delta.y + 0.0001)
 		{
 			grounded = true;
@@ -50,11 +66,14 @@ void Player::move(glm::vec3 delta)
 	}
 	else
 	{
-		body.position.y += collisions::moveY(body, delta.y, &body);
+		body.position.y += collisions::moveY(
+			body, delta.y, &body);
 	}
 
-	body.position.x += collisions::moveX(body, delta.x, &body);
-	body.position.z += collisions::moveZ(body, delta.z, &body);
+	body.position.x +=
+		collisions::moveX(body, delta.x, &body);
+	body.position.z +=
+		collisions::moveZ(body, delta.z, &body);
 }
 void Player::update(float deltaTime)
 {
@@ -67,7 +86,8 @@ void Player::update(float deltaTime)
 	forward.y = 0;
 	forward = glm::normalize(forward);
 
-	auto right = glm::cross(glm::vec3(0, 1, 0), forward);
+	auto right =
+		glm::cross(glm::vec3(0, 1, 0), forward);
 	glm::vec3 moveInput = glm::vec3(0);
 
 	if(InputData::isDown(INPUT_MOVE_FORWARD))
@@ -94,23 +114,43 @@ void Player::update(float deltaTime)
 
 	if(InputData::isPressed(INPUT_PRIMARY_ACTION))
 	{
-		auto res = collisions::raycast(body.position + eye, this->forward, 6);
+		auto res = collisions::raycast(
+			body.position + eye,
+			this->forward,
+			6);
 		if(res.block)
 		{
 			world->setBlock(
-				(int32_t)res.hitpoint.x, (int32_t)res.hitpoint.y, (int32_t)res.hitpoint.z, 0);
+				(int32_t)res.hitpoint.x,
+				(int32_t)res.hitpoint.y,
+				(int32_t)res.hitpoint.z,
+				0);
 		}
 	}
 
-	if(InputData::isPressed(INPUT_SECONDARY_ACTION))
+	if(InputData::isPressed(
+		   INPUT_SECONDARY_ACTION))
 	{
-		auto res = collisions::raycast(body.position + eye, this->forward, 6);
+		auto res = collisions::raycast(
+			body.position + eye,
+			this->forward,
+			6);
 		if(res.block)
 		{
-			int32_t bx = (int32_t)(res.hitpoint.x + res.norm.x);
-			int32_t by = (int32_t)(res.hitpoint.y + res.norm.y);
-			int32_t bz = (int32_t)(res.hitpoint.z + res.norm.z);
-			world->setBlock(bx, by, bz, ui->blockSelect.currentSelect);
+			int32_t bx =
+				(int32_t)(res.hitpoint.x +
+						  res.norm.x);
+			int32_t by =
+				(int32_t)(res.hitpoint.y +
+						  res.norm.y);
+			int32_t bz =
+				(int32_t)(res.hitpoint.z +
+						  res.norm.z);
+			world->setBlock(
+				bx,
+				by,
+				bz,
+				ui->blockSelect.currentSelect);
 		}
 	}
 
@@ -131,8 +171,10 @@ void Player::fixedUpdate()
 	auto world = World::get();
 	velocity.x = moveInput.x * moveSpeed;
 	velocity.z = moveInput.z * moveSpeed;
-	velocity.y = std::max(-world->physicsData.maxFallSpeed,
-						  velocity.y + world->physicsData.gravity * fixedDelta);
+	velocity.y = std::max(
+		-world->physicsData.maxFallSpeed,
+		velocity.y + world->physicsData.gravity *
+						 fixedDelta);
 	move(velocity * fixedDelta);
 	moveInput = glm::vec3(0);
 }
