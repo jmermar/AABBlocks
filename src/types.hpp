@@ -9,6 +9,8 @@ namespace vblck
 constexpr uint32_t fixedTicks = 50;
 constexpr float fixedDelta = 1.f / fixedTicks;
 
+constexpr size_t NUM_CHUNK_LODS = 6;
+
 enum class Result
 {
 	SUCESS,

@@ -55,8 +55,8 @@ void main()
 
 	outTBN = transpose(TBN);
 
-	vec3 position = (vec3(x, y, z) + vertex.pos) *
-					chunk.scale;
+	vec3 position = vec3(x, y, z) +
+					(vertex.pos) * chunk.scale;
 	;
 
 	gl_Position =

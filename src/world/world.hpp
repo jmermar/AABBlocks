@@ -18,8 +18,8 @@ struct ChunkGenerateCommand
 	std::vector<ChunkFaceData> data;
 	glm::vec3 position;
 	Chunk* chunk;
-	uint32_t first[4];
-	uint32_t count[4];
+	uint32_t first[NUM_CHUNK_LODS];
+	uint32_t count[NUM_CHUNK_LODS];
 };
 
 struct BlockDatabase

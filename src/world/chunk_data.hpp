@@ -24,11 +24,13 @@ struct Chunk
 	ChunkData<CHUNK_SIZE / 2> lod1;
 	ChunkData<CHUNK_SIZE / 4> lod2;
 	ChunkData<CHUNK_SIZE / 8> lod3;
+	ChunkData<CHUNK_SIZE / 16> lod4;
+	ChunkData<CHUNK_SIZE / 32> lod5;
 	render::ChunkData* meshData{};
 
-	std::vector<ChunkFaceData>
-	generateChunkData(uint32_t first[4],
-					  uint32_t count[4]);
+	std::vector<ChunkFaceData> generateChunkData(
+		uint32_t first[NUM_CHUNK_LODS],
+		uint32_t count[NUM_CHUNK_LODS]);
 	const BlockData* getBlock(int32_t x,
 							  int32_t y,
 							  int32_t z,
@@ -61,6 +63,10 @@ struct Chunk
 			return lod2[z][y][x];
 		if(lod == 3)
 			return lod3[z][y][x];
+		if(lod == 4)
+			return lod4[z][y][x];
+		if(lod == 5)
+			return lod5[z][y][x];
 		return 0;
 	}
 
@@ -82,6 +88,10 @@ struct Chunk
 			lod2[z][y][x] = id;
 		else if(lod == 3)
 			lod3[z][y][x] = id;
+		else if(lod == 4)
+			lod4[z][y][x] = id;
+		else if(lod == 5)
+			lod5[z][y][x] = id;
 	}
 
 	bool isEmpty()

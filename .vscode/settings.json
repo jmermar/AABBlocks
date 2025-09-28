@@ -76,6 +76,11 @@
         "set": "cpp",
         "any": "cpp",
         "csignal": "cpp",
-        "forward_list": "cpp"
+        "forward_list": "cpp",
+        "strstream": "cpp",
+        "ranges": "cpp",
+        "stdfloat": "cpp",
+        "typeindex": "cpp",
+        "valarray": "cpp"
     }
 }

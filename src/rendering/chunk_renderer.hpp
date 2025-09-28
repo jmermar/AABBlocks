@@ -17,8 +17,8 @@ struct ChunkData
 	vk::SSBO vertexData;
 	VkDeviceAddress vertexAddr;
 	glm::vec3 position;
-	uint32_t first[4];
-	uint32_t count[4];
+	uint32_t first[8];
+	uint32_t count[8];
 };
 
 struct ChunkDrawCommandsDispatcher
@@ -72,8 +72,8 @@ struct ChunkRenderer
 
 	ChunkData*
 	loadChunk(glm::vec3 position,
-			  uint32_t first[4],
-			  uint32_t count[4],
+			  uint32_t first[NUM_CHUNK_LODS],
+			  uint32_t count[NUM_CHUNK_LODS],
 			  std::span<ChunkFaceData> data);
 	void deleteChunk(ChunkData* chunk);
 

@@ -31,8 +31,8 @@ struct ChunkDataBuffer
 	float pad[2];
 	glm::vec3 position;
 	float pad2[1];
-	uint32_t vertexCount[4];
-	uint32_t firstVertex[4];
+	uint32_t vertexCount[8];
+	uint32_t firstVertex[8];
 	float scale;
 	float pad3[3];
 };
@@ -505,7 +505,7 @@ void ChunkRenderer::regenerateChunks()
 	{
 		data[i].chunkFaces = chunk->vertexAddr;
 		data[i].position = chunk->position;
-		for(int e = 0; e < 4; e++)
+		for(size_t e = 0; e < NUM_CHUNK_LODS; e++)
 		{
 			data[i].vertexCount[e] =
 				chunk->first[e];
@@ -562,8 +562,8 @@ void ChunkRenderer::destroy()
 
 ChunkData* ChunkRenderer ::loadChunk(
 	glm::vec3 position,
-	uint32_t first[4],
-	uint32_t count[4],
+	uint32_t first[NUM_CHUNK_LODS],
+	uint32_t count[NUM_CHUNK_LODS],
 	std::span<ChunkFaceData> data)
 {
 	auto* chunk = new ChunkData;
@@ -583,7 +583,7 @@ ChunkData* ChunkRenderer ::loadChunk(
 	render->bufferWritter.writeToSSBO(
 		staging.data.buffer, &chunk->vertexData);
 	staging.destroy(&render->frameDeletionQueue);
-	for(int i = 0; i < 4; i++)
+	for(size_t i = 0; i < NUM_CHUNK_LODS; i++)
 	{
 		chunk->count[i] = count[i];
 		chunk->first[i] = first[i];

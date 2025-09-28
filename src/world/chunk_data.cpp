@@ -48,23 +48,19 @@ u_int16_t modalId(Chunk* chunk,
 }
 
 std::vector<ChunkFaceData>
-Chunk::generateChunkData(uint32_t first[4],
-						 uint32_t count[4])
+Chunk::generateChunkData(
+	uint32_t first[NUM_CHUNK_LODS],
+	uint32_t count[NUM_CHUNK_LODS])
 {
 	regenerateLODs();
 	std::vector<ChunkFaceData> ret;
-	first[0] = ret.size();
-	_generateLODData(ret, 0);
-	count[0] = ret.size() - first[0];
-	first[1] = ret.size();
-	_generateLODData(ret, 1);
-	count[1] = ret.size() - first[1];
-	first[2] = ret.size();
-	_generateLODData(ret, 2);
-	count[2] = ret.size() - first[2];
-	first[3] = ret.size();
-	_generateLODData(ret, 3);
-	count[3] = ret.size() - first[3];
+
+	for(size_t i = 0; i < NUM_CHUNK_LODS; i++)
+	{
+		first[i] = ret.size();
+		_generateLODData(ret, 0);
+		count[i] = ret.size() - first[i];
+	}
 	return ret;
 }
 const BlockData* Chunk::getBlock(int32_t x,
@@ -96,7 +92,8 @@ const BlockData* Chunk::getBlock(int32_t x,
 }
 void Chunk::regenerateLODs()
 {
-	for(size_t lod = 1; lod <= 3; lod++)
+	for(size_t lod = 1; lod < NUM_CHUNK_LODS;
+		lod++)
 	{
 		for(uint32_t z = 0; z < CHUNK_SIZE >> lod;
 			z++)

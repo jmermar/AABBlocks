@@ -16,7 +16,7 @@ struct ChunkData
 {
 	FacesAddr faces;
 	vec4 position;
-	uint first[4];
-	uint count[4];
+	uint first[8];
+	uint count[8];
 	float scale;
 };
