@@ -89,7 +89,19 @@ uint getLOD(vec3 pos)
 {
 	float dist = length(ubo.cameraPosition.xyz -
 						(pos + vec3(16, 16, 16)));
-	return clamp(uint(dist / 256), 0u, 5u);
+	float ld = (dist / 256);
+	if(ld < 1.0)
+		return 0;
+	else if(ld < 2.0)
+		return 1;
+	else if(ld < 4.0)
+		return 2;
+	else if(ld < 8.0)
+		return 3;
+	else if(ld < 16.0)
+		return 4;
+	else
+		return 5;
 }
 
 void main()

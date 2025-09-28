@@ -58,7 +58,7 @@ Chunk::generateChunkData(
 	for(size_t i = 0; i < NUM_CHUNK_LODS; i++)
 	{
 		first[i] = ret.size();
-		_generateLODData(ret, 0);
+		_generateLODData(ret, i);
 		count[i] = ret.size() - first[i];
 	}
 	return ret;
